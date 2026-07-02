@@ -36,10 +36,11 @@
       --borde: #333; --sombra: 0 2px 8px rgba(0,0,0,.3);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition: background .3s, color .3s; }
+    html { overflow-x:hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition: background .3s, color .3s; overflow-x:hidden; }
     button { cursor:pointer; border:2px solid var(--borde); background:var(--surface); color:var(--text); border-radius:var(--radius); padding:10px 16px; font-size:14px; transition:all .2s; }
     button:active { transform:scale(.96); }
-    input, select { border:2px solid var(--borde); background:var(--surface); color:var(--text); border-radius:var(--radius); padding:10px; font-size:14px; width:100%; }
+    input, select { border:2px solid var(--borde); background:var(--surface); color:var(--text); border-radius:var(--radius); padding:10px; font-size:14px; width:100%; box-sizing:border-box; }
     input:focus, select:focus { outline:none; border-color:var(--accent); }
 
     /* ══ LOADING ══ */
@@ -78,11 +79,11 @@
 
     /* ══ TABS ══ */
     .tabs { display:flex; overflow-x:auto; gap:0; background:var(--surface); border-bottom:2px solid var(--borde); }
-    .tabs button { flex:1; min-width:max-content; border:none; border-radius:0; padding:10px 14px; font-size:13px; font-weight:600; color:var(--text2); background:transparent; border-bottom:3px solid transparent; }
+    .tabs button { flex:1; min-width:0; border:none; border-radius:0; padding:10px 8px; font-size:12px; font-weight:600; color:var(--text2); background:transparent; border-bottom:3px solid transparent; white-space:nowrap; }
     .tabs button.active { color:var(--accent); border-bottom-color:var(--accent); }
 
     /* ══ SECTIONS ══ */
-    .section { display:none; padding:16px; max-width:600px; margin:0 auto; }
+    .section { display:none; padding:16px; max-width:600px; margin:0 auto; width:100%; box-sizing:border-box; }
     .section.active { display:block; }
     .section h2 { font-size:18px; margin-bottom:14px; color:var(--accent); }
 
@@ -119,7 +120,7 @@
     /* ══ MODAL ══ */
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; align-items:center; justify-content:center; padding:16px; }
     .modal-overlay.show { display:flex; }
-    .modal { background:var(--surface); border-radius:16px; padding:24px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; }
+    .modal { background:var(--surface); border-radius:16px; padding:24px; width:calc(100% - 32px); max-width:440px; max-height:90vh; overflow-y:auto; }
     .modal h2 { font-size:18px; margin-bottom:14px; color:var(--accent); }
     .modal label { font-size:13px; font-weight:600; display:block; margin:10px 0 4px; }
     .modal .btn-row { display:flex; gap:8px; margin-top:16px; }
