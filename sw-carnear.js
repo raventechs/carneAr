@@ -1,7 +1,7 @@
-// sw-carnear.js — Service Worker CarneAR v1.4
-// P3 ROBUSTEZ: cache-first para shell + menú, network-first para Firestore
+// sw-carnear.js — Service Worker CarnéAR v1.5
+// P3 ROBUSTEZ: cachea shell para uso offline completo
 
-const CACHE_NAME = 'carnear-v1.4';
+const CACHE_NAME = 'carnear-v1.5';
 const SHELL = [
   '/carneAr/',
   '/carneAr/index.html',
@@ -17,35 +17,22 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
-  );
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if (url.hostname.includes('firestore.googleapis.com') ||
-      url.hostname.includes('identitytoolkit.googleapis.com') ||
-      url.hostname.includes('securetoken.googleapis.com')) {
-    return;
-  }
+  if (url.hostname.includes('firestore.googleapis.com') || url.hostname.includes('identitytoolkit.googleapis.com') || url.hostname.includes('securetoken.googleapis.com')) return;
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(response => {
-        if (response && response.status === 200 &&
-            (url.origin === self.location.origin ||
-             url.hostname.includes('googleapis.com') ||
-             url.hostname.includes('gstatic.com'))) {
+        if (response && response.status === 200 && (url.origin === self.location.origin || url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com'))) {
           caches.open(CACHE_NAME).then(c => c.put(e.request, response.clone()));
         }
         return response;
-      }).catch(() => {
-        if (e.request.mode === 'navigate') return caches.match('/carneAr/index.html');
-      });
+      }).catch(() => { if (e.request.mode === 'navigate') return caches.match('/carneAr/index.html'); });
     })
   );
 });
