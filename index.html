@@ -805,42 +805,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const ahora = new Date();
     const hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
     const fecha = ahora.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    let msg = '🥩 *CarneAR — Cierre de caja*
-';
-    msg += '📅 ' + fecha + ' | ⏰ ' + hora + '
-';
-    msg += '──────────────────
-';
-    msg += '💰 *Ingresos del turno*
-';
-    msg += 'Total: $' + totalGeneral.toLocaleString('es-AR') + '
-';
-    msg += 'Ventas: ' + ventas.length + '
-
-';
-    msg += '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR') + '
-';
-    msg += '💳 Débito: $' + totalDebito.toLocaleString('es-AR') + '
-';
-    msg += '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR') + '
-';
-    msg += '──────────────────
-';
-    msg += '⚖️ *Kilos vendidos*
-';
-    if (kgVacuna > 0) msg += '🐄 Vacuna: ' + r(kgVacuna) + ' kg
-';
-    if (kgCerdo > 0)  msg += '🐷 Cerdo: ' + r(kgCerdo) + ' kg
-';
-    if (kgPollo > 0)  msg += '🍗 Pollo: ' + r(kgPollo) + ' kg
-';
-    if (kgOtros > 0)  msg += '📦 Otros: ' + r(kgOtros) + ' kg
-';
-    if (!estaOnline) msg += '──────────────────
-⚠️ Cierre offline — ventas pendientes de sincronizar
-';
-    msg += '──────────────────
-_CarneAR · raventechs.lat_';
+    let msg = '🥩 *CarneAR — Cierre de caja*\n';
+    msg += '📅 ' + fecha + ' | ⏰ ' + hora + '\n';
+    msg += '──────────────────\n';
+    msg += '💰 *Ingresos del turno*\n';
+    msg += 'Total: $' + totalGeneral.toLocaleString('es-AR') + '\n';
+    msg += 'Ventas: ' + ventas.length + '\n\n';
+    msg += '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR') + '\n';
+    msg += '💳 Débito: $' + totalDebito.toLocaleString('es-AR') + '\n';
+    msg += '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR') + '\n';
+    msg += '──────────────────\n';
+    msg += '⚖️ *Kilos vendidos*\n';
+    if (kgVacuna > 0) msg += '🐄 Vacuna: ' + r(kgVacuna) + ' kg\n';
+    if (kgCerdo > 0)  msg += '🐷 Cerdo: ' + r(kgCerdo) + ' kg\n';
+    if (kgPollo > 0)  msg += '🍗 Pollo: ' + r(kgPollo) + ' kg\n';
+    if (kgOtros > 0)  msg += '📦 Otros: ' + r(kgOtros) + ' kg\n';
+    if (!estaOnline) msg += '──────────────────\n⚠️ Cierre offline — ventas pendientes de sincronizar\n';
+    msg += '──────────────────\n_CarneAR · raventechs.lat_';
     document.getElementById('cierreResumen').textContent = msg;
     document.getElementById('modalCierre').classList.add('show');
     document.getElementById('modalCierre').dataset.msg = msg;
