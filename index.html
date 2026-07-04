@@ -644,7 +644,9 @@
     }
   }
 
-  document.getElementById('loginGoogleBtn').addEventListener('click',()=>{auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(()=>{document.getElementById('loginError').textContent='No se pudo iniciar sesión con Google';});});
+  // Capturar resultado del redirect de Google al volver a la app
+  auth.getRedirectResult().catch(()=>{document.getElementById('loginError').textContent='No se pudo iniciar sesión con Google';});
+  document.getElementById('loginGoogleBtn').addEventListener('click',()=>{auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());});
   document.getElementById('loginEmailBtn').addEventListener('click',()=>{auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value.trim(),document.getElementById('loginPass').value).catch(()=>{document.getElementById('loginError').textContent='Email o contraseña incorrectos';});});
   document.getElementById('logoutBtn').addEventListener('click',()=>auth.signOut());
   document.getElementById('loginCajeroBtn').addEventListener('click',()=>{db.collection('configuracion').doc('general').get().then(doc=>{pinCajeroActual=(doc.exists&&doc.data().pinCajero)||PIN_CAJERO;document.getElementById('pinCajeroInput').value='';document.getElementById('pinCajeroError').textContent='';document.getElementById('modalPinCajero').classList.add('active');setTimeout(()=>document.getElementById('pinCajeroInput').focus(),50);});});
