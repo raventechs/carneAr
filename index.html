@@ -337,6 +337,11 @@
         <button class="btn-cobrar" id="cartCobrarBtn">Cobrar</button>
       </div>
     </div>
+    <div style="margin-top:12px;background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:14px;">
+      <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔒 Cierre de caja</h3>
+      <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa.</p>
+      <button id="cierreBtn" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:13px;font-weight:700;font-size:0.95rem;cursor:pointer;">Cerrar caja y enviar resumen</button>
+    </div>
   </div>
 
   <!-- MENÚ -->
@@ -405,6 +410,12 @@
       <h3>Catálogo</h3>
       <button class="btn-warning" id="configResetBtn">🔄 Restablecer catálogo de ejemplo</button>
       <button class="btn-warning" id="configCleanDupBtn">🧹 Limpiar duplicados</button>
+    </div>
+    <div class="config-group">
+      <h3>📲 WhatsApp para cierre de caja</h3>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:8px;">Número al que se envía el resumen. Formato: 5491112345678</p>
+      <input type="tel" id="cfgWhatsapp" inputmode="numeric" placeholder="5491112345678" style="margin-bottom:8px;">
+      <button class="btn-save" id="guardarWhatsappBtn" style="width:100%;">Guardar número</button>
     </div>
     <div class="config-group">
       <h3>Cuenta</h3>
@@ -854,6 +865,7 @@ function initApp() {
   switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
   subscribeData();
   initOffline();
+  cargarWhatsapp();
 }
 
 function renderTabs(tabs) {
@@ -1884,6 +1896,144 @@ function toast(msg) {
       .catch(e => logError('sw', e));
   }
 
+
+// ══════════ WHATSAPP CONFIG ══════════
+var whatsappNumero = '';
+db.collection('negocios').doc(getUserDoc && getUserDoc() ? getUserDoc() : 'tmp').collection('config').doc('general').get().catch(function(){});
+// Cargar WA al iniciar sesión
+function cargarWhatsapp() {
+  var uid = getUserDoc();
+  if (!uid) return;
+  db.collection('negocios').doc(uid).collection('config').doc('general').get().then(function(doc) {
+    if (doc.exists && doc.data().whatsapp) {
+      whatsappNumero = doc.data().whatsapp;
+      var el = document.getElementById('cfgWhatsapp');
+      if (el) el.value = whatsappNumero;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var btnWA = document.getElementById('guardarWhatsappBtn');
+  if (btnWA) {
+    btnWA.onclick = function() {
+      var num = document.getElementById('cfgWhatsapp').value.replace(/[^0-9]/g, '');
+      if (!num || num.length < 10) { toast('Número inválido. Formato: 5491112345678'); return; }
+      var uid = getUserDoc();
+      if (!uid) { toast('Iniciá sesión primero'); return; }
+      db.collection('negocios').doc(uid).collection('config').doc('general').set({ whatsapp: num }, { merge: true }).then(function() {
+        whatsappNumero = num;
+        toast('Número guardado ✓');
+      });
+    };
+  }
+
+  var btnCierre = document.getElementById('cierreBtn');
+  if (btnCierre) {
+    btnCierre.onclick = async function() {
+      var uid = getUserDoc();
+      if (!uid) { toast('Iniciá sesión primero'); return; }
+      if (!whatsappNumero) { toast('Configurá el número de WhatsApp en Configuración'); return; }
+
+      var hoy = new Date().toISOString().slice(0, 10);
+      var ventas = [];
+
+      if (estaOnline) {
+        var snap = await db.collection('negocios').doc(uid).collection('ventas')
+          .where('fechaDia', '==', hoy).get().catch(function(e) { logError('cierre', e.message); return { docs: [] }; });
+        ventas = snap.docs.map(function(d) { return d.data(); });
+      } else {
+        var pend = await idbGetAll('ventas_pendientes');
+        ventas = pend.filter(function(v) { return v.fechaDia === hoy; });
+      }
+
+      var totalGeneral = 0, totalEfectivo = 0, totalDebito = 0, totalTransferencia = 0;
+      var kgVacuna = 0, kgCerdo = 0, kgPollo = 0, kgOtros = 0;
+
+      ventas.forEach(function(v) {
+        var t = v.total || 0;
+        totalGeneral += t;
+        var m = v.metodo || v.metodoPago || '';
+        if (m === 'efectivo') totalEfectivo += t;
+        else if (m === 'debito') totalDebito += t;
+        else if (m === 'transferencia') totalTransferencia += t;
+
+        (v.items || []).forEach(function(it) {
+          var prod = productos.find(function(p) { return p.nombre === it.nombre; });
+          var cat = prod ? prod.categoria : 'Otros';
+          var tamano = (it.tamano || it.tamanoNombre || '');
+          var kg = tamano.indexOf('1/2') >= 0 ? 0.5 : 1;
+          var cant = it.cantidad || 1;
+          var totalKg = kg * cant;
+          if (cat === 'Vacuna') kgVacuna += totalKg;
+          else if (cat === 'Cerdo') kgCerdo += totalKg;
+          else if (cat === 'Pollo') kgPollo += totalKg;
+          else kgOtros += totalKg;
+        });
+      });
+
+      var r = function(n) { return Math.round(n * 100) / 100; };
+      var ahora = new Date();
+      var hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      var fecha = ahora.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      var lineas = [
+        '🥩 *CarneAR — Cierre de caja*',
+        '📅 ' + fecha + ' | ⏰ ' + hora,
+        '──────────────────',
+        '💰 *Ingresos del turno*',
+        'Total: $' + totalGeneral.toLocaleString('es-AR'),
+        'Ventas: ' + ventas.length,
+        '',
+        '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR'),
+        '💳 Débito: $' + totalDebito.toLocaleString('es-AR'),
+        '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR'),
+        '──────────────────',
+        '⚖️ *Kilos vendidos*'
+      ];
+      if (kgVacuna > 0) lineas.push('🐄 Vacuna: ' + r(kgVacuna) + ' kg');
+      if (kgCerdo > 0)  lineas.push('🐷 Cerdo: ' + r(kgCerdo) + ' kg');
+      if (kgPollo > 0)  lineas.push('🍗 Pollo: ' + r(kgPollo) + ' kg');
+      if (kgOtros > 0)  lineas.push('📦 Otros: ' + r(kgOtros) + ' kg');
+      if (kgVacuna + kgCerdo + kgPollo + kgOtros === 0) lineas.push('Sin ventas registradas');
+      if (!estaOnline) { lineas.push('──────────────────'); lineas.push('⚠️ Offline — ventas pendientes de sincronizar'); }
+      lineas.push('──────────────────');
+      lineas.push('_CarneAR · raventechs.lat_');
+
+      var msg = lineas.join('\n');
+      document.getElementById('cierreResumen').textContent = msg;
+      var modal = document.getElementById('modalCierre');
+      modal.classList.add('show');
+      modal.dataset.msg = msg;
+      modal.dataset.totalGeneral = totalGeneral;
+    };
+  }
+
+  var btnCierreCancel = document.getElementById('cierreModalCancelBtn');
+  if (btnCierreCancel) btnCierreCancel.onclick = function() { document.getElementById('modalCierre').classList.remove('show'); };
+
+  var btnCierreConfirm = document.getElementById('cierreModalConfirmBtn');
+  if (btnCierreConfirm) {
+    btnCierreConfirm.onclick = async function() {
+      var modal = document.getElementById('modalCierre');
+      var uid = getUserDoc();
+      var cierreData = {
+        fechaDia: new Date().toISOString().slice(0, 10),
+        fechaISO: new Date().toISOString(),
+        totalGeneral: parseFloat(modal.dataset.totalGeneral) || 0
+      };
+      if (estaOnline && uid) {
+        await db.collection('negocios').doc(uid).collection('cierres')
+          .add(Object.assign({}, cierreData, { ts: firebase.firestore.FieldValue.serverTimestamp() }))
+          .catch(function(e) { logError('guardar-cierre', e.message); });
+      }
+      modal.classList.remove('show');
+      toast('✅ Cierre registrado');
+      window.open('https://wa.me/' + whatsappNumero + '?text=' + encodeURIComponent(modal.dataset.msg), '_blank');
+    };
+  }
+});
+
 // ══════════ OFFLINE-FIRST v1.5 ══════════
 var estaOnline = navigator.onLine;
 var IDB_NAME = 'carnear-offline';
@@ -1978,5 +2128,17 @@ function initOffline() {
 }
 
 </script>
+<!-- MODAL CIERRE -->
+<div class="modal-overlay" id="modalCierre">
+  <div class="modal">
+    <h2 style="margin-bottom:8px;">🔒 Confirmar cierre de caja</h2>
+    <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;">Resumen que se enviará por WhatsApp:</p>
+    <div id="cierreResumen" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:12px;font-size:0.82rem;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:280px;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn-cancel" id="cierreModalCancelBtn" style="flex:1;">Cancelar</button>
+      <button class="btn-save" id="cierreModalConfirmBtn" style="flex:1;">Cerrar y enviar WA</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
