@@ -44,9 +44,9 @@
 
     /* ══ LOADING ══ */
     #loading { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
-    .loader-meat { width:110px; height:110px; animation: pulso 1.2s ease-in-out infinite; }
+    .loader-meat { width:90px; height:90px; animation: spin 2s linear infinite; }
     .loader-meat svg { width:100%; height:100%; }
-    @keyframes pulso { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
+    @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
     .loader-text { margin-top:18px; font-size:22px; font-weight:700; color:var(--accent); letter-spacing:1px; }
     .loader-sub { font-size:13px; color:var(--text2); margin-top:6px; }
 
@@ -233,32 +233,19 @@
   </style>
 </head>
 <body>
-<div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
 
 <!-- ══ LOADING SCREEN ══ -->
 <div id="loading">
   <div class="loader-meat">
-    <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
-      <!-- Grasa exterior / contorno -->
-      <ellipse cx="60" cy="52" rx="50" ry="36" fill="#f0d9b5" stroke="#d4a76a" stroke-width="2"/>
-      <!-- Carne roja principal -->
-      <ellipse cx="60" cy="53" rx="38" ry="26" fill="#c0392b"/>
-      <!-- Veta de grasa interna -->
-      <ellipse cx="52" cy="48" rx="12" ry="5" fill="#e8c99a" opacity=".8" transform="rotate(-10 52 48)"/>
-      <ellipse cx="68" cy="58" rx="9" ry="4" fill="#e8c99a" opacity=".6" transform="rotate(8 68 58)"/>
-      <!-- Tono oscuro para profundidad -->
-      <ellipse cx="60" cy="55" rx="30" ry="18" fill="#a93226" opacity=".4"/>
-      <!-- Hueso izquierdo -->
-      <rect x="8" y="42" width="10" height="18" rx="5" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
-      <ellipse cx="13" cy="42" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
-      <ellipse cx="13" cy="60" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
-      <!-- Hueso derecho -->
-      <rect x="102" y="42" width="10" height="18" rx="5" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
-      <ellipse cx="107" cy="42" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
-      <ellipse cx="107" cy="60" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="50" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
+      <ellipse cx="42" cy="45" rx="10" ry="6" fill="#B22222" opacity=".7"/>
+      <ellipse cx="58" cy="55" rx="8" ry="5" fill="#CD5C5C" opacity=".5"/>
+      <path d="M22 35 Q18 28 24 24 L30 28 Q26 30 24 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
+      <path d="M78 35 Q82 28 76 24 L70 28 Q74 30 76 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
     </svg>
   </div>
-  <div class="loader-text">CarneAR</div>
+  <div class="loader-text">CarnéAR</div>
   <div class="loader-sub">Preparando el mostrador…</div>
 </div>
 
@@ -337,7 +324,6 @@
 
   <!-- CAJA -->
   <div class="section" id="sec-caja">
-    <div id="offlineBadgeBox" style="display:none;background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin-bottom:8px;">⏳ Ventas pendientes de sincronizar: <strong id="offlineBadgeCount">0</strong></div>
     <div class="grupos-bar" id="gruposBar"></div>
     <div class="pos-grid" id="posGrid"></div>
     <div class="cart" id="cartArea">
@@ -865,7 +851,6 @@ function initApp() {
   renderTabs(tabs);
   switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
   subscribeData();
-  initOffline();
 }
 
 function renderTabs(tabs) {
@@ -1070,30 +1055,12 @@ async function confirmarVenta() {
   const metodo = document.getElementById('cobrarMetodo').value;
   const items = carrito.map(c => ({nombre:c.nombre, tamano:c.tamanoNombre, precio:c.precio, cantidad:c.cantidad}));
 
-  var ventaData = {
-    items: items, total: total, metodo: metodo,
-    fechaLocal: new Date().toISOString(),
-    fechaDia: new Date().toISOString().slice(0, 10),
-    uid: uid
-  };
-
-  if (!estaOnline) {
-    await idbAdd('ventas_pendientes', ventaData);
-    actualizarBadge();
-    carrito = [];
-    renderCart();
-    document.getElementById('modalCobrar').classList.remove('show');
-    toast('📴 Venta guardada offline — se sincronizará al reconectar');
-    return;
-  }
-
   try {
     // Save sale
     await db.collection('negocios').doc(uid).collection('ventas').add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
-      fechaLocal: new Date().toISOString(),
-      fechaDia: new Date().toISOString().slice(0, 10)
+      fechaLocal: new Date().toISOString()
     });
 
     // Decrement stock (per-size recipes)
@@ -1903,125 +1870,6 @@ function toast(msg) {
     navigator.serviceWorker.register('/carneAr/sw-carnear.js')
       .catch(e => logError('sw', e));
   }
-
-// ══════════ OFFLINE-FIRST (v1.5) ══════════
-var estaOnline = navigator.onLine;
-var IDB_NAME = 'carnear-offline';
-var IDB_VER = 1;
-var idb = null;
-
-function abrirIDB() {
-  return new Promise(function(res, rej) {
-    var req = indexedDB.open(IDB_NAME, IDB_VER);
-    req.onupgradeneeded = function(e) {
-      var d = e.target.result;
-      if (!d.objectStoreNames.contains('ventas_pendientes'))
-        d.createObjectStore('ventas_pendientes', { keyPath: 'localId', autoIncrement: true });
-      if (!d.objectStoreNames.contains('cierres_pendientes'))
-        d.createObjectStore('cierres_pendientes', { keyPath: 'localId', autoIncrement: true });
-    };
-    req.onsuccess = function(e) { idb = e.target.result; res(idb); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function idbAdd(store, obj) {
-  return new Promise(function(res, rej) {
-    var req = idb.transaction(store, 'readwrite').objectStore(store).add(obj);
-    req.onsuccess = function() { res(req.result); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function idbGetAll(store) {
-  return new Promise(function(res, rej) {
-    var req = idb.transaction(store, 'readonly').objectStore(store).getAll();
-    req.onsuccess = function() { res(req.result); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function idbDelete(store, key) {
-  return new Promise(function(res, rej) {
-    var req = idb.transaction(store, 'readwrite').objectStore(store).delete(key);
-    req.onsuccess = function() { res(); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function actualizarBadge() {
-  if (!idb) return;
-  Promise.all([idbGetAll('ventas_pendientes'), idbGetAll('cierres_pendientes')]).then(function(r) {
-    var total = r[0].length + r[1].length;
-    var box = document.getElementById('offlineBadgeBox');
-    var cnt = document.getElementById('offlineBadgeCount');
-    if (box) box.style.display = total > 0 ? '' : 'none';
-    if (cnt) cnt.textContent = total;
-  });
-}
-
-function sincronizarPendientes() {
-  if (!idb || !estaOnline) return;
-  var uid = getUserDoc();
-  if (!uid) return;
-  idbGetAll('ventas_pendientes').then(function(ventas) {
-    var i = 0;
-    function subirSiguiente() {
-      if (i >= ventas.length) return subirCierres();
-      var v = ventas[i++];
-      var localId = v.localId;
-      var data = {};
-      for (var k in v) { if (k !== 'localId') data[k] = v[k]; }
-      data.ts = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection('negocios').doc(uid).collection('ventas').add(data)
-        .then(function() { return idbDelete('ventas_pendientes', localId); })
-        .then(subirSiguiente)
-        .catch(function(e) { logError('sync-venta', e.message); });
-    }
-    subirSiguiente();
-  });
-}
-
-function subirCierres() {
-  var uid = getUserDoc();
-  if (!uid) return;
-  idbGetAll('cierres_pendientes').then(function(cierres) {
-    var i = 0;
-    function subirSiguiente() {
-      if (i >= cierres.length) { actualizarBadge(); toast('Registros sincronizados'); return; }
-      var c = cierres[i++];
-      var localId = c.localId;
-      var data = {};
-      for (var k in c) { if (k !== 'localId') data[k] = c[k]; }
-      data.ts = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection('negocios').doc(uid).collection('cierres').add(data)
-        .then(function() { return idbDelete('cierres_pendientes', localId); })
-        .then(subirSiguiente)
-        .catch(function(e) { logError('sync-cierre', e.message); });
-    }
-    subirSiguiente();
-  });
-}
-
-function actualizarEstadoConexion(online) {
-  estaOnline = online;
-  var banner = document.getElementById('offlineBanner');
-  if (banner) banner.style.display = online ? 'none' : 'block';
-  if (online) sincronizarPendientes();
-}
-
-window.addEventListener('online', function() { actualizarEstadoConexion(true); });
-window.addEventListener('offline', function() { actualizarEstadoConexion(false); });
-
-// Inicializar IDB cuando el usuario esté autenticado
-// Se llama desde initApp() existente
-function initOffline() {
-  abrirIDB().then(function() {
-    actualizarEstadoConexion(navigator.onLine);
-    actualizarBadge();
-  }).catch(function(e) { console.error('IDB error:', e); });
-}
-
 </script>
 </body>
 </html>
