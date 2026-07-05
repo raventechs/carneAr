@@ -22,7 +22,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CarneAR</title>
+  <title>CarnéAR</title>
   <style>
     :root {
       --bg: #fafafa; --surface: #ffffff; --text: #1a1a1a; --text2: #555;
@@ -246,7 +246,7 @@
       <path d="M78 35 Q82 28 76 24 L70 28 Q74 30 76 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
     </svg>
   </div>
-  <div class="loader-text">CarneAR</div>
+  <div class="loader-text">CarnéAR</div>
   <div class="loader-sub">Preparando el mostrador…</div>
 </div>
 
@@ -262,7 +262,7 @@
         <path d="M78 38 Q82 30 76 26 L70 30 Q74 33 76 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
       </svg>
     </div>
-    <h1>Carne<span>AR</span></h1>
+    <h1>Carné<span>AR</span></h1>
     <p>Caja registradora para carnicerías</p>
 
     <div id="loginFormFields">
@@ -288,7 +288,7 @@
 <div id="app">
   <header class="topbar">
     <div class="topbar-left">
-      <button id="logoBtn" aria-label="CarneAR">
+      <button id="logoBtn" aria-label="CarnéAR">
         <svg class="topbar-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <ellipse cx="50" cy="52" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
           <ellipse cx="42" cy="47" rx="10" ry="6" fill="#B22222" opacity=".7"/>
@@ -296,7 +296,7 @@
           <path d="M22 38 Q18 30 24 26 L30 30 Q26 33 24 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
         </svg>
       </button>
-      <span class="topbar-title">Carne<span>AR</span></span>
+      <span class="topbar-title">Carné<span>AR</span></span>
     </div>
     <div class="topbar-right">
       <button id="themeBtn">🌙</button>
@@ -325,7 +325,7 @@
 
   <!-- CAJA -->
   <div class="section" id="sec-caja">
-    <div id="offlineBadgeBox" style="display:none;background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin-bottom:8px;">⏳ Ventas offline pendientes: <strong id="offlineBadgeCount">0</strong></div>
+    <div id="offlineBadgeBox" style="display:none;background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin-bottom:8px;">⏳ Ventas pendientes de sincronizar: <strong id="offlineBadgeCount">0</strong></div>
     <div class="grupos-bar" id="gruposBar"></div>
     <div class="pos-grid" id="posGrid"></div>
     <div class="cart" id="cartArea">
@@ -339,7 +339,7 @@
     </div>
     <div style="margin-top:12px;background:var(--surface);border:2px solid var(--accent);border-radius:10px;padding:14px;">
       <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔒 Cierre de caja</h3>
-      <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa de inmediato.</p>
+      <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa.</p>
       <button id="cierreBtn" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:13px;font-weight:700;font-size:0.95rem;cursor:pointer;">Cerrar caja y enviar resumen</button>
     </div>
   </div>
@@ -558,20 +558,6 @@ const db = firebase.firestore();
 
 // ══════════ CONSTANTS ══════════
 const PIN_CAJERO = '2468';
-
-// ══ OFFLINE-FIRST ══
-let estaOnline = navigator.onLine;
-const IDB_NAME = 'carnear-offline', IDB_VER = 1;
-let idb = null;
-function abrirIDB(){return new Promise((res,rej)=>{const req=indexedDB.open(IDB_NAME,IDB_VER);req.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('ventas_pendientes'))d.createObjectStore('ventas_pendientes',{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains('cierres_pendientes'))d.createObjectStore('cierres_pendientes',{keyPath:'id',autoIncrement:true});};req.onsuccess=e=>{idb=e.target.result;res(idb);};req.onerror=e=>rej(e);});}
-function idbAdd(store,obj){return new Promise((res,rej)=>{const req=idb.transaction(store,'readwrite').objectStore(store).add(obj);req.onsuccess=()=>res(req.result);req.onerror=e=>rej(e);});}
-function idbGetAll(store){return new Promise((res,rej)=>{const req=idb.transaction(store,'readonly').objectStore(store).getAll();req.onsuccess=()=>res(req.result);req.onerror=e=>rej(e);});}
-function idbDelete(store,key){return new Promise((res,rej)=>{const req=idb.transaction(store,'readwrite').objectStore(store).delete(key);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
-async function actualizarBadge(){if(!idb)return;const v=await idbGetAll('ventas_pendientes');const c=await idbGetAll('cierres_pendientes');const t=v.length+c.length;const box=document.getElementById('offlineBadgeBox');if(box){box.style.display=t>0?'':'none';if(document.getElementById('offlineBadgeCount'))document.getElementById('offlineBadgeCount').textContent=t;}}
-async function sincronizarPendientes(){if(!idb||!estaOnline)return;try{const ventas=await idbGetAll('ventas_pendientes');for(const v of ventas){const{id,...data}=v;await db.collection('ventas').add({...data,ts:firebase.firestore.FieldValue.serverTimestamp()});await idbDelete('ventas_pendientes',id);}const cierres=await idbGetAll('cierres_pendientes');for(const c of cierres){const{id,...data}=c;await db.collection('cierres').add({...data,ts:firebase.firestore.FieldValue.serverTimestamp()});await idbDelete('cierres_pendientes',id);}await actualizarBadge();if(ventas.length+cierres.length>0)toast(`2705 ${ventas.length+cierres.length} registros sincronizados`);}catch(e){logError('sync',e.message);}}
-function actualizarEstadoConexion(online){estaOnline=online;const b=document.getElementById('offlineBanner');if(b)b.style.display=online?'none':'block';if(online)sincronizarPendientes();}
-window.addEventListener('online',()=>actualizarEstadoConexion(true));
-window.addEventListener('offline',()=>actualizarEstadoConexion(false));
 const PIN_ADMIN = '2580';
 const ADMIN_EMAIL = 'rgaraventa@gmail.com';
 
@@ -758,81 +744,198 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('logoutBtn').onclick = () => auth.signOut();
   document.getElementById('configLogoutBtn').onclick = () => auth.signOut();
 
-  // WhatsApp config
+  // ── OFFLINE-FIRST ──
+  let estaOnline = navigator.onLine;
+  const IDB_NAME = 'carnear-offline', IDB_VER = 1;
+  let idb = null;
+
+  function abrirIDB() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(IDB_NAME, IDB_VER);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('ventas_pendientes'))
+          d.createObjectStore('ventas_pendientes', { keyPath: 'id', autoIncrement: true });
+        if (!d.objectStoreNames.contains('cierres_pendientes'))
+          d.createObjectStore('cierres_pendientes', { keyPath: 'id', autoIncrement: true });
+      };
+      req.onsuccess = e => { idb = e.target.result; res(idb); };
+      req.onerror = e => rej(e);
+    });
+  }
+
+  function idbAdd(store, obj) {
+    return new Promise((res, rej) => {
+      const req = idb.transaction(store, 'readwrite').objectStore(store).add(obj);
+      req.onsuccess = () => res(req.result);
+      req.onerror = e => rej(e);
+    });
+  }
+
+  function idbGetAll(store) {
+    return new Promise((res, rej) => {
+      const req = idb.transaction(store, 'readonly').objectStore(store).getAll();
+      req.onsuccess = () => res(req.result);
+      req.onerror = e => rej(e);
+    });
+  }
+
+  function idbDelete(store, key) {
+    return new Promise((res, rej) => {
+      const req = idb.transaction(store, 'readwrite').objectStore(store).delete(key);
+      req.onsuccess = () => res();
+      req.onerror = e => rej(e);
+    });
+  }
+
+  async function actualizarBadge() {
+    if (!idb) return;
+    const v = await idbGetAll('ventas_pendientes');
+    const c = await idbGetAll('cierres_pendientes');
+    const total = v.length + c.length;
+    const box = document.getElementById('offlineBadgeBox');
+    const cnt = document.getElementById('offlineBadgeCount');
+    if (box) box.style.display = total > 0 ? '' : 'none';
+    if (cnt) cnt.textContent = total;
+  }
+
+  async function sincronizarPendientes() {
+    if (!idb || !estaOnline) return;
+    try {
+      const ventas = await idbGetAll('ventas_pendientes');
+      for (const v of ventas) {
+        const { id, ...data } = v;
+        await db.collection('ventas').add({ ...data, ts: firebase.firestore.FieldValue.serverTimestamp() });
+        await idbDelete('ventas_pendientes', id);
+      }
+      const cierres = await idbGetAll('cierres_pendientes');
+      for (const c of cierres) {
+        const { id, ...data } = c;
+        await db.collection('cierres').add({ ...data, ts: firebase.firestore.FieldValue.serverTimestamp() });
+        await idbDelete('cierres_pendientes', id);
+      }
+      await actualizarBadge();
+      const total = ventas.length + cierres.length;
+      if (total > 0) toast('✅ ' + total + ' registros sincronizados');
+    } catch(e) { logError('sync', e.message); }
+  }
+
+  function actualizarEstadoConexion(online) {
+    estaOnline = online;
+    const banner = document.getElementById('offlineBanner');
+    if (banner) banner.style.display = online ? 'none' : 'block';
+    if (online) sincronizarPendientes();
+  }
+  window.addEventListener('online', () => actualizarEstadoConexion(true));
+  window.addEventListener('offline', () => actualizarEstadoConexion(false));
+
+  // Init offline
+  abrirIDB().then(() => { actualizarEstadoConexion(navigator.onLine); actualizarBadge(); });
+
+  // ── WHATSAPP CONFIG ──
   let whatsappNumero = '';
   db.collection('configuracion').doc('general').get().then(doc => {
     if (doc.exists && doc.data().whatsapp) {
       whatsappNumero = doc.data().whatsapp;
-      document.getElementById('cfgWhatsapp').value = whatsappNumero;
+      const el = document.getElementById('cfgWhatsapp');
+      if (el) el.value = whatsappNumero;
     }
   });
   document.getElementById('guardarWhatsappBtn').onclick = () => {
-    const num = document.getElementById('cfgWhatsapp').value.replace(/\D/g, '');
+    const num = document.getElementById('cfgWhatsapp').value.replace(/[^0-9]/g, '');
     if (!num || num.length < 10) { toast('Número inválido. Formato: 5491112345678'); return; }
     db.collection('configuracion').doc('general').set({ whatsapp: num }, { merge: true }).then(() => {
-      whatsappNumero = num; toast('Número guardado ✓');
+      whatsappNumero = num;
+      toast('Número guardado ✓');
     });
   };
 
-  // Cierre de caja
+  // ── CIERRE DE CAJA ──
   document.getElementById('cierreBtn').onclick = async () => {
     if (!whatsappNumero) { toast('Configurá el número de WhatsApp en Configuración'); return; }
     const hoy = new Date().toISOString().slice(0, 10);
     let ventas = [];
     if (estaOnline) {
-      const snap = await db.collection('ventas').where('fechaDia', '==', hoy).get().catch(e => { logError('cierre', e); return { docs: [] }; });
+      const snap = await db.collection('ventas').where('fechaDia', '==', hoy).get()
+        .catch(e => { logError('cierre', e); return { docs: [] }; });
       ventas = snap.docs.map(d => d.data());
     } else {
       const pend = await idbGetAll('ventas_pendientes');
       ventas = pend.filter(v => v.fechaDia === hoy);
     }
-    let totalGeneral=0, totalEfectivo=0, totalDebito=0, totalTransferencia=0;
-    let kgVacuna=0, kgCerdo=0, kgPollo=0, kgOtros=0;
+
+    let totalGeneral = 0, totalEfectivo = 0, totalDebito = 0, totalTransferencia = 0;
+    let kgVacuna = 0, kgCerdo = 0, kgPollo = 0, kgOtros = 0;
+
     ventas.forEach(v => {
-      const t = v.total || 0; totalGeneral += t;
-      if (v.metodoPago === 'efectivo') totalEfectivo += t;
-      else if (v.metodoPago === 'debito' || v.metodoPago === 'débito') totalDebito += t;
-      else if (v.metodoPago === 'transferencia') totalTransferencia += t;
+      const t = v.total || 0;
+      totalGeneral += t;
+      if (v.metodo === 'efectivo' || v.metodoPago === 'efectivo') totalEfectivo += t;
+      else if (v.metodo === 'debito' || v.metodoPago === 'debito') totalDebito += t;
+      else if (v.metodo === 'transferencia' || v.metodoPago === 'transferencia') totalTransferencia += t;
       (v.items || []).forEach(it => {
         const kg = (it.kg || 0) * (it.cantidad || 1);
         if (it.categoria === 'Vacuna') kgVacuna += kg;
         else if (it.categoria === 'Cerdo') kgCerdo += kg;
         else if (it.categoria === 'Pollo') kgPollo += kg;
-        else kgOtros += kg;
+        else if (kg > 0) kgOtros += kg;
       });
     });
+
     const r = n => Math.round(n * 100) / 100;
     const ahora = new Date();
     const hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
     const fecha = ahora.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    let msg = '🥩 *CarneAR — Cierre de caja*\n';
-    msg += '📅 ' + fecha + ' | ⏰ ' + hora + '\n';
-    msg += '──────────────────\n';
-    msg += '💰 *Ingresos del turno*\n';
-    msg += 'Total: $' + totalGeneral.toLocaleString('es-AR') + '\n';
-    msg += 'Ventas: ' + ventas.length + '\n\n';
-    msg += '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR') + '\n';
-    msg += '💳 Débito: $' + totalDebito.toLocaleString('es-AR') + '\n';
-    msg += '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR') + '\n';
-    msg += '──────────────────\n';
-    msg += '⚖️ *Kilos vendidos*\n';
-    if (kgVacuna > 0) msg += '🐄 Vacuna: ' + r(kgVacuna) + ' kg\n';
-    if (kgCerdo > 0)  msg += '🐷 Cerdo: ' + r(kgCerdo) + ' kg\n';
-    if (kgPollo > 0)  msg += '🍗 Pollo: ' + r(kgPollo) + ' kg\n';
-    if (kgOtros > 0)  msg += '📦 Otros: ' + r(kgOtros) + ' kg\n';
-    if (!estaOnline) msg += '──────────────────\n⚠️ Cierre offline — ventas pendientes de sincronizar\n';
-    msg += '──────────────────\n_CarneAR · raventechs.lat_';
+
+    const lineas = [
+      '🥩 *CarneAR — Cierre de caja*',
+      '📅 ' + fecha + ' | ⏰ ' + hora,
+      '──────────────────',
+      '💰 *Ingresos del turno*',
+      'Total: $' + totalGeneral.toLocaleString('es-AR'),
+      'Ventas: ' + ventas.length,
+      '',
+      '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR'),
+      '💳 Débito: $' + totalDebito.toLocaleString('es-AR'),
+      '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR'),
+      '──────────────────',
+      '⚖️ *Kilos vendidos*',
+    ];
+    if (kgVacuna > 0) lineas.push('🐄 Vacuna: ' + r(kgVacuna) + ' kg');
+    if (kgCerdo > 0)  lineas.push('🐷 Cerdo: ' + r(kgCerdo) + ' kg');
+    if (kgPollo > 0)  lineas.push('🍗 Pollo: ' + r(kgPollo) + ' kg');
+    if (kgOtros > 0)  lineas.push('📦 Otros: ' + r(kgOtros) + ' kg');
+    if (kgVacuna + kgCerdo + kgPollo + kgOtros === 0) lineas.push('Sin ventas por kg registradas');
+    if (!estaOnline) { lineas.push('──────────────────'); lineas.push('⚠️ Offline — ventas pendientes de sincronizar'); }
+    lineas.push('──────────────────');
+    lineas.push('_CarneAR · raventechs.lat_');
+
+    const msg = lineas.join('\n');
     document.getElementById('cierreResumen').textContent = msg;
-    document.getElementById('modalCierre').classList.add('show');
-    document.getElementById('modalCierre').dataset.msg = msg;
-    document.getElementById('modalCierre').dataset.totalGeneral = totalGeneral;
+    const modal = document.getElementById('modalCierre');
+    modal.classList.add('show');
+    modal.dataset.msg = msg;
+    modal.dataset.totalGeneral = totalGeneral;
   };
-  document.getElementById('cierreModalCancelBtn').onclick = () => document.getElementById('modalCierre').classList.remove('show');
+
+  document.getElementById('cierreModalCancelBtn').onclick = () => {
+    document.getElementById('modalCierre').classList.remove('show');
+  };
+
   document.getElementById('cierreModalConfirmBtn').onclick = async () => {
     const modal = document.getElementById('modalCierre');
-    const cierreData = { fechaDia: new Date().toISOString().slice(0,10), fechaISO: new Date().toISOString(), totalGeneral: parseFloat(modal.dataset.totalGeneral)||0 };
-    if (estaOnline) { await db.collection('cierres').add({...cierreData, ts: firebase.firestore.FieldValue.serverTimestamp()}).catch(e=>logError('cierre',e)); }
-    else { await idbAdd('cierres_pendientes', cierreData); await actualizarBadge(); }
+    const cierreData = {
+      fechaDia: new Date().toISOString().slice(0, 10),
+      fechaISO: new Date().toISOString(),
+      totalGeneral: parseFloat(modal.dataset.totalGeneral) || 0
+    };
+    if (estaOnline) {
+      await db.collection('cierres').add({ ...cierreData, ts: firebase.firestore.FieldValue.serverTimestamp() })
+        .catch(e => logError('cierre', e));
+    } else {
+      await idbAdd('cierres_pendientes', cierreData);
+      await actualizarBadge();
+    }
     modal.classList.remove('show');
     if (estaOnline) toast('✅ Cierre registrado');
     window.open('https://wa.me/' + whatsappNumero + '?text=' + encodeURIComponent(modal.dataset.msg), '_blank');
@@ -958,8 +1061,6 @@ function initApp() {
   renderTabs(tabs);
   switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
   subscribeData();
-  // Offline-first init
-  abrirIDB().then(()=>{ actualizarEstadoConexion(navigator.onLine); actualizarBadge(); });
 }
 
 function renderTabs(tabs) {
@@ -1980,5 +2081,17 @@ function toast(msg) {
       .catch(e => logError('sw', e));
   }
 </script>
+<!-- MODAL CIERRE -->
+<div class="modal-overlay" id="modalCierre">
+  <div class="modal">
+    <h2>🔒 Confirmar cierre de caja</h2>
+    <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;">Resumen que se enviará por WhatsApp:</p>
+    <div id="cierreResumen" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:12px;font-size:0.82rem;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:300px;overflow-y:auto;"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn-cancel" id="cierreModalCancelBtn">Cancelar</button>
+      <button class="btn-save" id="cierreModalConfirmBtn">Cerrar caja y enviar WA</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
