@@ -44,9 +44,9 @@
 
     /* ══ LOADING ══ */
     #loading { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
-    .loader-meat { width:90px; height:90px; animation: spin 2s linear infinite; }
+    .loader-meat { width:110px; height:110px; animation: pulso 1.2s ease-in-out infinite; }
     .loader-meat svg { width:100%; height:100%; }
-    @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    @keyframes pulso { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
     .loader-text { margin-top:18px; font-size:22px; font-weight:700; color:var(--accent); letter-spacing:1px; }
     .loader-sub { font-size:13px; color:var(--text2); margin-top:6px; }
 
@@ -233,20 +233,32 @@
   </style>
 </head>
 <body>
-<div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — las ventas se guardan localmente y se sincronizan al reconectar</div>
+<div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
 
 <!-- ══ LOADING SCREEN ══ -->
 <div id="loading">
   <div class="loader-meat">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="50" cy="50" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
-      <ellipse cx="42" cy="45" rx="10" ry="6" fill="#B22222" opacity=".7"/>
-      <ellipse cx="58" cy="55" rx="8" ry="5" fill="#CD5C5C" opacity=".5"/>
-      <path d="M22 35 Q18 28 24 24 L30 28 Q26 30 24 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
-      <path d="M78 35 Q82 28 76 24 L70 28 Q74 30 76 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
+    <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Grasa exterior / contorno -->
+      <ellipse cx="60" cy="52" rx="50" ry="36" fill="#f0d9b5" stroke="#d4a76a" stroke-width="2"/>
+      <!-- Carne roja principal -->
+      <ellipse cx="60" cy="53" rx="38" ry="26" fill="#c0392b"/>
+      <!-- Veta de grasa interna -->
+      <ellipse cx="52" cy="48" rx="12" ry="5" fill="#e8c99a" opacity=".8" transform="rotate(-10 52 48)"/>
+      <ellipse cx="68" cy="58" rx="9" ry="4" fill="#e8c99a" opacity=".6" transform="rotate(8 68 58)"/>
+      <!-- Tono oscuro para profundidad -->
+      <ellipse cx="60" cy="55" rx="30" ry="18" fill="#a93226" opacity=".4"/>
+      <!-- Hueso izquierdo -->
+      <rect x="8" y="42" width="10" height="18" rx="5" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
+      <ellipse cx="13" cy="42" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
+      <ellipse cx="13" cy="60" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
+      <!-- Hueso derecho -->
+      <rect x="102" y="42" width="10" height="18" rx="5" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
+      <ellipse cx="107" cy="42" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
+      <ellipse cx="107" cy="60" rx="8" ry="6" fill="#f5f0e8" stroke="#d4c9a8" stroke-width="1.5"/>
     </svg>
   </div>
-  <div class="loader-text">CarnéAR</div>
+  <div class="loader-text">CarneAR</div>
   <div class="loader-sub">Preparando el mostrador…</div>
 </div>
 
@@ -337,11 +349,6 @@
         <button class="btn-cobrar" id="cartCobrarBtn">Cobrar</button>
       </div>
     </div>
-    <div style="margin-top:12px;background:var(--surface);border:2px solid var(--accent);border-radius:10px;padding:14px;">
-      <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔒 Cierre de caja</h3>
-      <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa.</p>
-      <button id="cierreBtn" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:13px;font-weight:700;font-size:0.95rem;cursor:pointer;">Cerrar caja y enviar resumen</button>
-    </div>
   </div>
 
   <!-- MENÚ -->
@@ -410,12 +417,6 @@
       <h3>Catálogo</h3>
       <button class="btn-warning" id="configResetBtn">🔄 Restablecer catálogo de ejemplo</button>
       <button class="btn-warning" id="configCleanDupBtn">🧹 Limpiar duplicados</button>
-    </div>
-    <div class="config-group">
-      <h3>📲 WhatsApp para cierre de caja</h3>
-      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:8px;">Número al que se envía el resumen. Formato: 5491112345678</p>
-      <input type="tel" id="cfgWhatsapp" inputmode="numeric" placeholder="5491112345678" style="margin-bottom:8px;">
-      <button class="btn-save" id="guardarWhatsappBtn">Guardar número</button>
     </div>
     <div class="config-group">
       <h3>Cuenta</h3>
@@ -744,203 +745,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('logoutBtn').onclick = () => auth.signOut();
   document.getElementById('configLogoutBtn').onclick = () => auth.signOut();
 
-  // ── OFFLINE-FIRST ──
-  let estaOnline = navigator.onLine;
-  const IDB_NAME = 'carnear-offline', IDB_VER = 1;
-  let idb = null;
-
-  function abrirIDB() {
-    return new Promise((res, rej) => {
-      const req = indexedDB.open(IDB_NAME, IDB_VER);
-      req.onupgradeneeded = e => {
-        const d = e.target.result;
-        if (!d.objectStoreNames.contains('ventas_pendientes'))
-          d.createObjectStore('ventas_pendientes', { keyPath: 'id', autoIncrement: true });
-        if (!d.objectStoreNames.contains('cierres_pendientes'))
-          d.createObjectStore('cierres_pendientes', { keyPath: 'id', autoIncrement: true });
-      };
-      req.onsuccess = e => { idb = e.target.result; res(idb); };
-      req.onerror = e => rej(e);
-    });
-  }
-
-  function idbAdd(store, obj) {
-    return new Promise((res, rej) => {
-      const req = idb.transaction(store, 'readwrite').objectStore(store).add(obj);
-      req.onsuccess = () => res(req.result);
-      req.onerror = e => rej(e);
-    });
-  }
-
-  function idbGetAll(store) {
-    return new Promise((res, rej) => {
-      const req = idb.transaction(store, 'readonly').objectStore(store).getAll();
-      req.onsuccess = () => res(req.result);
-      req.onerror = e => rej(e);
-    });
-  }
-
-  function idbDelete(store, key) {
-    return new Promise((res, rej) => {
-      const req = idb.transaction(store, 'readwrite').objectStore(store).delete(key);
-      req.onsuccess = () => res();
-      req.onerror = e => rej(e);
-    });
-  }
-
-  async function actualizarBadge() {
-    if (!idb) return;
-    const v = await idbGetAll('ventas_pendientes');
-    const c = await idbGetAll('cierres_pendientes');
-    const total = v.length + c.length;
-    const box = document.getElementById('offlineBadgeBox');
-    const cnt = document.getElementById('offlineBadgeCount');
-    if (box) box.style.display = total > 0 ? '' : 'none';
-    if (cnt) cnt.textContent = total;
-  }
-
-  async function sincronizarPendientes() {
-    if (!idb || !estaOnline) return;
-    try {
-      const ventas = await idbGetAll('ventas_pendientes');
-      for (const v of ventas) {
-        const { id, ...data } = v;
-        await db.collection('ventas').add({ ...data, ts: firebase.firestore.FieldValue.serverTimestamp() });
-        await idbDelete('ventas_pendientes', id);
-      }
-      const cierres = await idbGetAll('cierres_pendientes');
-      for (const c of cierres) {
-        const { id, ...data } = c;
-        await db.collection('cierres').add({ ...data, ts: firebase.firestore.FieldValue.serverTimestamp() });
-        await idbDelete('cierres_pendientes', id);
-      }
-      await actualizarBadge();
-      const total = ventas.length + cierres.length;
-      if (total > 0) toast('✅ ' + total + ' registros sincronizados');
-    } catch(e) { logError('sync', e.message); }
-  }
-
-  function actualizarEstadoConexion(online) {
-    estaOnline = online;
-    const banner = document.getElementById('offlineBanner');
-    if (banner) banner.style.display = online ? 'none' : 'block';
-    if (online) sincronizarPendientes();
-  }
-  window.addEventListener('online', () => actualizarEstadoConexion(true));
-  window.addEventListener('offline', () => actualizarEstadoConexion(false));
-
-  // Init offline
-  abrirIDB().then(() => { actualizarEstadoConexion(navigator.onLine); actualizarBadge(); });
-
-  // ── WHATSAPP CONFIG ──
-  let whatsappNumero = '';
-  db.collection('configuracion').doc('general').get().then(doc => {
-    if (doc.exists && doc.data().whatsapp) {
-      whatsappNumero = doc.data().whatsapp;
-      const el = document.getElementById('cfgWhatsapp');
-      if (el) el.value = whatsappNumero;
-    }
-  });
-  document.getElementById('guardarWhatsappBtn').onclick = () => {
-    const num = document.getElementById('cfgWhatsapp').value.replace(/[^0-9]/g, '');
-    if (!num || num.length < 10) { toast('Número inválido. Formato: 5491112345678'); return; }
-    db.collection('configuracion').doc('general').set({ whatsapp: num }, { merge: true }).then(() => {
-      whatsappNumero = num;
-      toast('Número guardado ✓');
-    });
-  };
-
-  // ── CIERRE DE CAJA ──
-  document.getElementById('cierreBtn').onclick = async () => {
-    if (!whatsappNumero) { toast('Configurá el número de WhatsApp en Configuración'); return; }
-    const hoy = new Date().toISOString().slice(0, 10);
-    let ventas = [];
-    if (estaOnline) {
-      const snap = await db.collection('ventas').where('fechaDia', '==', hoy).get()
-        .catch(e => { logError('cierre', e); return { docs: [] }; });
-      ventas = snap.docs.map(d => d.data());
-    } else {
-      const pend = await idbGetAll('ventas_pendientes');
-      ventas = pend.filter(v => v.fechaDia === hoy);
-    }
-
-    let totalGeneral = 0, totalEfectivo = 0, totalDebito = 0, totalTransferencia = 0;
-    let kgVacuna = 0, kgCerdo = 0, kgPollo = 0, kgOtros = 0;
-
-    ventas.forEach(v => {
-      const t = v.total || 0;
-      totalGeneral += t;
-      if (v.metodo === 'efectivo' || v.metodoPago === 'efectivo') totalEfectivo += t;
-      else if (v.metodo === 'debito' || v.metodoPago === 'debito') totalDebito += t;
-      else if (v.metodo === 'transferencia' || v.metodoPago === 'transferencia') totalTransferencia += t;
-      (v.items || []).forEach(it => {
-        const kg = (it.kg || 0) * (it.cantidad || 1);
-        if (it.categoria === 'Vacuna') kgVacuna += kg;
-        else if (it.categoria === 'Cerdo') kgCerdo += kg;
-        else if (it.categoria === 'Pollo') kgPollo += kg;
-        else if (kg > 0) kgOtros += kg;
-      });
-    });
-
-    const r = n => Math.round(n * 100) / 100;
-    const ahora = new Date();
-    const hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    const fecha = ahora.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-    const lineas = [
-      '🥩 *CarneAR — Cierre de caja*',
-      '📅 ' + fecha + ' | ⏰ ' + hora,
-      '──────────────────',
-      '💰 *Ingresos del turno*',
-      'Total: $' + totalGeneral.toLocaleString('es-AR'),
-      'Ventas: ' + ventas.length,
-      '',
-      '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR'),
-      '💳 Débito: $' + totalDebito.toLocaleString('es-AR'),
-      '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR'),
-      '──────────────────',
-      '⚖️ *Kilos vendidos*',
-    ];
-    if (kgVacuna > 0) lineas.push('🐄 Vacuna: ' + r(kgVacuna) + ' kg');
-    if (kgCerdo > 0)  lineas.push('🐷 Cerdo: ' + r(kgCerdo) + ' kg');
-    if (kgPollo > 0)  lineas.push('🍗 Pollo: ' + r(kgPollo) + ' kg');
-    if (kgOtros > 0)  lineas.push('📦 Otros: ' + r(kgOtros) + ' kg');
-    if (kgVacuna + kgCerdo + kgPollo + kgOtros === 0) lineas.push('Sin ventas por kg registradas');
-    if (!estaOnline) { lineas.push('──────────────────'); lineas.push('⚠️ Offline — ventas pendientes de sincronizar'); }
-    lineas.push('──────────────────');
-    lineas.push('_CarneAR · raventechs.lat_');
-
-    const msg = lineas.join('\n');
-    document.getElementById('cierreResumen').textContent = msg;
-    const modal = document.getElementById('modalCierre');
-    modal.classList.add('show');
-    modal.dataset.msg = msg;
-    modal.dataset.totalGeneral = totalGeneral;
-  };
-
-  document.getElementById('cierreModalCancelBtn').onclick = () => {
-    document.getElementById('modalCierre').classList.remove('show');
-  };
-
-  document.getElementById('cierreModalConfirmBtn').onclick = async () => {
-    const modal = document.getElementById('modalCierre');
-    const cierreData = {
-      fechaDia: new Date().toISOString().slice(0, 10),
-      fechaISO: new Date().toISOString(),
-      totalGeneral: parseFloat(modal.dataset.totalGeneral) || 0
-    };
-    if (estaOnline) {
-      await db.collection('cierres').add({ ...cierreData, ts: firebase.firestore.FieldValue.serverTimestamp() })
-        .catch(e => logError('cierre', e));
-    } else {
-      await idbAdd('cierres_pendientes', cierreData);
-      await actualizarBadge();
-    }
-    modal.classList.remove('show');
-    if (estaOnline) toast('✅ Cierre registrado');
-    window.open('https://wa.me/' + whatsappNumero + '?text=' + encodeURIComponent(modal.dataset.msg), '_blank');
-  };
-
   // Cart
   document.getElementById('cartClearBtn').onclick = () => { carrito=[]; renderCart(); };
   document.getElementById('cartCobrarBtn').onclick = openCobrar;
@@ -1061,6 +865,7 @@ function initApp() {
   renderTabs(tabs);
   switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
   subscribeData();
+  initOffline();
 }
 
 function renderTabs(tabs) {
@@ -1265,12 +1070,30 @@ async function confirmarVenta() {
   const metodo = document.getElementById('cobrarMetodo').value;
   const items = carrito.map(c => ({nombre:c.nombre, tamano:c.tamanoNombre, precio:c.precio, cantidad:c.cantidad}));
 
+  var ventaData = {
+    items: items, total: total, metodo: metodo,
+    fechaLocal: new Date().toISOString(),
+    fechaDia: new Date().toISOString().slice(0, 10),
+    uid: uid
+  };
+
+  if (!estaOnline) {
+    await idbAdd('ventas_pendientes', ventaData);
+    actualizarBadge();
+    carrito = [];
+    renderCart();
+    document.getElementById('modalCobrar').classList.remove('show');
+    toast('📴 Venta guardada offline — se sincronizará al reconectar');
+    return;
+  }
+
   try {
     // Save sale
     await db.collection('negocios').doc(uid).collection('ventas').add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
-      fechaLocal: new Date().toISOString()
+      fechaLocal: new Date().toISOString(),
+      fechaDia: new Date().toISOString().slice(0, 10)
     });
 
     // Decrement stock (per-size recipes)
@@ -2080,18 +1903,125 @@ function toast(msg) {
     navigator.serviceWorker.register('/carneAr/sw-carnear.js')
       .catch(e => logError('sw', e));
   }
+
+// ══════════ OFFLINE-FIRST (v1.5) ══════════
+var estaOnline = navigator.onLine;
+var IDB_NAME = 'carnear-offline';
+var IDB_VER = 1;
+var idb = null;
+
+function abrirIDB() {
+  return new Promise(function(res, rej) {
+    var req = indexedDB.open(IDB_NAME, IDB_VER);
+    req.onupgradeneeded = function(e) {
+      var d = e.target.result;
+      if (!d.objectStoreNames.contains('ventas_pendientes'))
+        d.createObjectStore('ventas_pendientes', { keyPath: 'localId', autoIncrement: true });
+      if (!d.objectStoreNames.contains('cierres_pendientes'))
+        d.createObjectStore('cierres_pendientes', { keyPath: 'localId', autoIncrement: true });
+    };
+    req.onsuccess = function(e) { idb = e.target.result; res(idb); };
+    req.onerror = function(e) { rej(e); };
+  });
+}
+
+function idbAdd(store, obj) {
+  return new Promise(function(res, rej) {
+    var req = idb.transaction(store, 'readwrite').objectStore(store).add(obj);
+    req.onsuccess = function() { res(req.result); };
+    req.onerror = function(e) { rej(e); };
+  });
+}
+
+function idbGetAll(store) {
+  return new Promise(function(res, rej) {
+    var req = idb.transaction(store, 'readonly').objectStore(store).getAll();
+    req.onsuccess = function() { res(req.result); };
+    req.onerror = function(e) { rej(e); };
+  });
+}
+
+function idbDelete(store, key) {
+  return new Promise(function(res, rej) {
+    var req = idb.transaction(store, 'readwrite').objectStore(store).delete(key);
+    req.onsuccess = function() { res(); };
+    req.onerror = function(e) { rej(e); };
+  });
+}
+
+function actualizarBadge() {
+  if (!idb) return;
+  Promise.all([idbGetAll('ventas_pendientes'), idbGetAll('cierres_pendientes')]).then(function(r) {
+    var total = r[0].length + r[1].length;
+    var box = document.getElementById('offlineBadgeBox');
+    var cnt = document.getElementById('offlineBadgeCount');
+    if (box) box.style.display = total > 0 ? '' : 'none';
+    if (cnt) cnt.textContent = total;
+  });
+}
+
+function sincronizarPendientes() {
+  if (!idb || !estaOnline) return;
+  var uid = getUserDoc();
+  if (!uid) return;
+  idbGetAll('ventas_pendientes').then(function(ventas) {
+    var i = 0;
+    function subirSiguiente() {
+      if (i >= ventas.length) return subirCierres();
+      var v = ventas[i++];
+      var localId = v.localId;
+      var data = {};
+      for (var k in v) { if (k !== 'localId') data[k] = v[k]; }
+      data.ts = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection('negocios').doc(uid).collection('ventas').add(data)
+        .then(function() { return idbDelete('ventas_pendientes', localId); })
+        .then(subirSiguiente)
+        .catch(function(e) { logError('sync-venta', e.message); });
+    }
+    subirSiguiente();
+  });
+}
+
+function subirCierres() {
+  var uid = getUserDoc();
+  if (!uid) return;
+  idbGetAll('cierres_pendientes').then(function(cierres) {
+    var i = 0;
+    function subirSiguiente() {
+      if (i >= cierres.length) { actualizarBadge(); toast('Registros sincronizados'); return; }
+      var c = cierres[i++];
+      var localId = c.localId;
+      var data = {};
+      for (var k in c) { if (k !== 'localId') data[k] = c[k]; }
+      data.ts = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection('negocios').doc(uid).collection('cierres').add(data)
+        .then(function() { return idbDelete('cierres_pendientes', localId); })
+        .then(subirSiguiente)
+        .catch(function(e) { logError('sync-cierre', e.message); });
+    }
+    subirSiguiente();
+  });
+}
+
+function actualizarEstadoConexion(online) {
+  estaOnline = online;
+  var banner = document.getElementById('offlineBanner');
+  if (banner) banner.style.display = online ? 'none' : 'block';
+  if (online) sincronizarPendientes();
+}
+
+window.addEventListener('online', function() { actualizarEstadoConexion(true); });
+window.addEventListener('offline', function() { actualizarEstadoConexion(false); });
+
+// Inicializar IDB cuando el usuario esté autenticado
+// Se llama desde initApp() existente
+function initOffline() {
+  abrirIDB().then(function() {
+    actualizarEstadoConexion(navigator.onLine);
+    actualizarBadge();
+  }).catch(function(e) { console.error('IDB error:', e); });
+}
+
 </script>
-<!-- MODAL CIERRE -->
-<div class="modal-overlay" id="modalCierre">
-  <div class="modal">
-    <h2>🔒 Confirmar cierre de caja</h2>
-    <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;">Resumen que se enviará por WhatsApp:</p>
-    <div id="cierreResumen" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:12px;font-size:0.82rem;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:300px;overflow-y:auto;"></div>
-    <div class="btn-row" style="margin-top:14px;">
-      <button class="btn-cancel" id="cierreModalCancelBtn">Cancelar</button>
-      <button class="btn-save" id="cierreModalConfirmBtn">Cerrar caja y enviar WA</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
