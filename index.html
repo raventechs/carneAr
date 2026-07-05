@@ -1467,56 +1467,65 @@ async function loadReportes() {
 async function loadHistorial(filter) {
   const uid = getUserDoc();
   if(!uid) return;
-  let desde, hasta = new Date();
-  hasta.setHours(23,59,59,999);
+  let desdeDia, hastaDia;
+  const hoy = new Date().toISOString().slice(0,10);
 
   if(filter === 'hoy') {
-    desde = new Date(); desde.setHours(0,0,0,0);
+    desdeDia = hastaDia = hoy;
   } else if(filter === 'semana') {
-    desde = new Date();
-    desde.setDate(desde.getDate() - desde.getDay());
-    desde.setHours(0,0,0,0);
+    const d = new Date(); d.setDate(d.getDate()-6);
+    desdeDia = d.toISOString().slice(0,10); hastaDia = hoy;
   } else {
-    const d = document.getElementById('histDesde').value;
-    const h = document.getElementById('histHasta').value;
-    if(!d||!h) return toast('Seleccioná ambas fechas');
-    desde = new Date(d+'T00:00:00');
-    hasta = new Date(h+'T23:59:59');
+    desdeDia = document.getElementById('histDesde').value;
+    hastaDia = document.getElementById('histHasta').value;
+    if(!desdeDia||!hastaDia) return toast('Seleccioná ambas fechas');
   }
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('ventas')
-      .where('fecha','>=',desde).where('fecha','<=',hasta)
-      .orderBy('fecha','desc').get();
+    let ventas = [];
 
-    let totalV = 0, totalI = 0;
-    const ventas = [];
-    snap.forEach(doc => {
-      const v = doc.data();
-      totalV++;
-      totalI += v.total||0;
-      ventas.push(v);
-    });
+    if (estaOnline) {
+      const snap = await db.collection('negocios').doc(uid).collection('ventas')
+        .where('fechaDia','>=',desdeDia).where('fechaDia','<=',hastaDia)
+        .orderBy('fechaDia','desc').get();
+      snap.forEach(doc => ventas.push(doc.data()));
+    }
 
-    document.getElementById('historialSummary').innerHTML = `
-      <div class="historial-summary">
-        <div><h4>Ventas</h4><p>${totalV}</p></div>
-        <div><h4>Ingresos</h4><p>$${totalI.toLocaleString()}</p></div>
-      </div>`;
+    // Agregar ventas offline pendientes del período
+    if (idb) {
+      const pendientes = await idbGetAll('ventas_pendientes');
+      pendientes.filter(v => v.fechaDia >= desdeDia && v.fechaDia <= hastaDia)
+        .forEach(v => ventas.push(v));
+    }
+
+    const totalV = ventas.length;
+    const totalI = ventas.reduce((s,v) => s+(v.total||0), 0);
+    const tEfectivo = ventas.filter(v=>(v.metodo||v.metodoPago)==='efectivo').reduce((s,v)=>s+(v.total||0),0);
+
+    document.getElementById('historialSummary').innerHTML =
+      '<div class="historial-summary">' +
+      '<div><h4>Ventas</h4><p>' + totalV + '</p></div>' +
+      '<div><h4>Ingresos</h4><p>$' + totalI.toLocaleString('es-AR') + '</p></div>' +
+      '<div><h4>Efectivo</h4><p>$' + tEfectivo.toLocaleString('es-AR') + '</p></div>' +
+      '</div>';
 
     const list = document.getElementById('historialList');
     if(!ventas.length) { list.innerHTML='<div class="empty-state"><p>Sin ventas en este período</p></div>'; return; }
 
-    list.innerHTML = ventas.map(v => {
-      const fecha = v.fecha ? v.fecha.toDate().toLocaleString('es-AR') : (v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
-      const itemsStr = (v.items||[]).map(i=>`${i.nombre} (${i.tamano}) x${i.cantidad}`).join(', ');
-      return `<div class="venta-card">
-        <div class="venta-card-head"><span>${fecha}</span><span>${v.metodo==='efectivo'?'💵':'🏦'} ${v.metodo}</span></div>
-        <div class="venta-card-items">${itemsStr}</div>
-        <div class="venta-card-total">$${(v.total||0).toLocaleString()}</div>
-      </div>`;
+    list.innerHTML = ventas.map(function(v) {
+      var fecha = v.fechaDia || (v.fechaLocal ? v.fechaLocal.slice(0,10) : '');
+      var itemsStr = (v.items||[]).map(function(i){ return i.nombre + ' (' + (i.tamano||i.tamanoNombre||'') + ') x' + i.cantidad; }).join(', ');
+      var metodo = v.metodo || v.metodoPago || '';
+      var icono = metodo === 'efectivo' ? '💵' : metodo === 'debito' ? '💳' : '📲';
+      var offline = !v.fecha ? ' <span style="font-size:0.7rem;color:var(--naranja);">(offline)</span>' : '';
+      return '<div class="venta-card">' +
+        '<div class="venta-card-head"><span>' + fecha + offline + '</span><span>' + icono + ' ' + metodo + '</span></div>' +
+        '<div class="venta-card-items">' + itemsStr + '</div>' +
+        '<div class="venta-card-total">$' + (v.total||0).toLocaleString('es-AR') + '</div>' +
+        '</div>';
     }).join('');
   } catch(e) {
+    logError('historial', e.message);
     document.getElementById('historialList').innerHTML = '<div class="empty-state"><p>Error cargando historial</p></div>';
   }
 }
