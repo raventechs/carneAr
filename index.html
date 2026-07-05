@@ -429,7 +429,17 @@
 
   <!-- CONFIG -->
   <div class="section" id="sec-config">
-    <h2>⚙️ Configuración</h2>
+    <div class="config-group">
+      <h3>💾 Backup de datos</h3>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px;">Se genera automáticamente una vez por día. Guardá el archivo en un lugar seguro.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="btn-save" style="width:auto;padding:9px 14px;font-size:0.82rem;" onclick="generarBackup(false)">📥 Descargar backup</button>
+        <button class="btn-cancel" style="width:auto;padding:9px 14px;font-size:0.82rem;" onclick="document.getElementById('inputRestaurar').click()">📤 Restaurar</button>
+      </div>
+      <input type="file" id="inputRestaurar" accept=".json" style="display:none;" onchange="restaurarBackup(this)">
+      <p style="font-size:0.75rem;color:var(--text2);">Último backup: <span id="ultimoBackupFecha">—</span></p>
+    </div>
+        <h2>⚙️ Configuración</h2>
     <div class="config-group">
       <h3>Catálogo</h3>
       <button class="btn-warning" id="configResetBtn">🔄 Restablecer catálogo de ejemplo</button>
@@ -442,16 +452,6 @@
       <button class="btn-save" id="guardarWhatsappBtn" style="width:100%;">Guardar número</button>
     </div>
     <div class="config-group">
-      <h3>💾 Backup de datos</h3>
-      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px;">Se genera automáticamente una vez por día. Guardá el archivo en un lugar seguro.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <button class="btn-save" style="width:auto;padding:9px 14px;font-size:0.82rem;" onclick="generarBackup(false)">📥 Descargar backup</button>
-        <button class="btn-cancel" style="width:auto;padding:9px 14px;font-size:0.82rem;" onclick="document.getElementById('inputRestaurar').click()">📤 Restaurar</button>
-      </div>
-      <input type="file" id="inputRestaurar" accept=".json" style="display:none;" onchange="restaurarBackup(this)">
-      <p style="font-size:0.75rem;color:var(--text2);">Último backup: <span id="ultimoBackupFecha">—</span></p>
-    </div>
-        <div class="config-group">
       <h3>Cuenta</h3>
       <button class="btn-danger" id="configLogoutBtn">🚪 Cerrar sesión</button>
     </div>
