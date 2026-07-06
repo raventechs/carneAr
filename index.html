@@ -230,7 +230,12 @@
       #dashCards .big { font-size:20px; }
       #dashCards h3 { font-size:11px; }
     }
-  </style>
+  
+/* ── ADMIN VIEW BANNER ── */
+#adminViewBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#f0b84a;color:#111;font-size:0.78rem;font-weight:700;padding:7px 16px;text-align:center;letter-spacing:.02em}
+#adminViewBanner.on{display:block}
+body.admin-view-active{padding-top:34px}
+</style>
 </head>
 <body>
 <div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
@@ -562,6 +567,25 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+
+// ── ADMIN VIEW ──
+var _adminViewUid = null;
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('adminView') === '1' && params.get('uid')) {
+    _adminViewUid = params.get('uid');
+  }
+})();
+function activarAdminViewBanner() {
+  if (!_adminViewUid) return;
+  var b = document.getElementById('adminViewBanner');
+  var s = document.getElementById('adminViewUid');
+  if (b) { b.classList.add('on'); document.body.classList.add('admin-view-active'); }
+  if (s) s.textContent = _adminViewUid;
+}
+function salirAdminView() { window.location.href = window.location.origin + window.location.pathname; }
+window.salirAdminView = salirAdminView;
+
 <script>
 // ══════════ FIREBASE CONFIG ══════════
 const firebaseConfig = {
@@ -752,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loading').style.display = 'none';
     auth.onAuthStateChanged(user => {
       if(user && !user.isAnonymous) {
+        if(_adminViewUid && user.email === 'rgaraventa@gmail.com') { activarAdminViewBanner(); Object.defineProperty(user,'uid',{get:()=>_adminViewUid}); }
         currentUser = user;
         userRole = 'dueno';
         initApp();
