@@ -2341,25 +2341,84 @@ function renderTicketItems(items, total) {
     cont.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px">No se encontraron items en el ticket</div>';
     return;
   }
-  const html = items.map(item => `
-    <div class="ticket-item">
-      <div>
-        <div class="ticket-item-desc">${item.descripcion}</div>
-        <div class="ticket-item-detail">${item.cantidad} ${item.unidad} × $${formatNum(item.precio_unitario)}</div>
+  const html = items.map((item, idx) => `
+    <div class="ticket-item" id="ticket-row-${idx}">
+      <div style="flex:1;min-width:0">
+        <div class="ticket-item-desc" id="ticket-desc-${idx}">${item.descripcion}</div>
+        <div class="ticket-item-detail" id="ticket-detail-${idx}">${item.cantidad} ${item.unidad} × $${formatNum(item.precio_unitario)}</div>
       </div>
-      <div class="ticket-item-precio">$${formatNum(item.subtotal)}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="ticket-item-precio" id="ticket-precio-${idx}">$${formatNum(item.subtotal)}</div>
+        <button onclick="editarItemTicket(${idx})" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--muted);font-size:0.75rem;cursor:pointer">✏️</button>
+      </div>
+    </div>
+    <div id="ticket-edit-${idx}" style="display:none;background:var(--card);border:1px solid var(--accent);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px">${item.descripcion}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Cantidad (kg)</div>
+          <input type="number" step="0.001" id="edit-cant-${idx}" value="${item.cantidad}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:0.88rem">
+        </div>
+        <div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Precio/kg</div>
+          <input type="number" step="0.01" id="edit-precio-${idx}" value="${item.precio_unitario}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:0.88rem">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="confirmarEditTicket(${idx})" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.82rem;font-weight:700;cursor:pointer">✅ OK</button>
+        <button onclick="eliminarItemTicket(${idx})" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;border-radius:8px;padding:8px;font-size:0.82rem;cursor:pointer">🗑</button>
+      </div>
     </div>
   `).join('');
-  const totalHTML = total ? `<div class="ticket-total"><span>TOTAL</span><span>$${formatNum(total)}</span></div>` : '';
+  const totalVal = ticketItemsData.reduce((s,i) => s + (i.subtotal||0), 0);
+  const totalHTML = `<div class="ticket-total"><span>TOTAL</span><span id="ticket-total-val">$${formatNum(totalVal)}</span></div>`;
   cont.innerHTML = html + totalHTML;
 }
+
+window.editarItemTicket = function(idx) {
+  // Toggle edición
+  const editDiv = document.getElementById('ticket-edit-'+idx);
+  const isOpen  = editDiv.style.display !== 'none';
+  // Cerrar todos
+  ticketItemsData.forEach((_, i) => {
+    const d = document.getElementById('ticket-edit-'+i);
+    if (d) d.style.display = 'none';
+  });
+  if (!isOpen) editDiv.style.display = 'block';
+};
+
+window.confirmarEditTicket = function(idx) {
+  const cant   = parseFloat(document.getElementById('edit-cant-'+idx).value) || 0;
+  const precio = parseFloat(document.getElementById('edit-precio-'+idx).value) || 0;
+  ticketItemsData[idx].cantidad       = cant;
+  ticketItemsData[idx].precio_unitario = precio;
+  ticketItemsData[idx].subtotal        = Math.round(cant * precio * 100) / 100;
+  document.getElementById('ticket-edit-'+idx).style.display = 'none';
+  // Actualizar display
+  document.getElementById('ticket-detail-'+idx).textContent = cant + ' ' + (ticketItemsData[idx].unidad||'kg') + ' × $' + formatNum(precio);
+  document.getElementById('ticket-precio-'+idx).textContent = '$' + formatNum(ticketItemsData[idx].subtotal);
+  // Actualizar total
+  const totalVal = ticketItemsData.reduce((s,i) => s + (i.subtotal||0), 0);
+  const tv = document.getElementById('ticket-total-val');
+  if (tv) tv.textContent = '$' + formatNum(totalVal);
+};
+
+window.eliminarItemTicket = function(idx) {
+  ticketItemsData.splice(idx, 1);
+  renderTicketItems(ticketItemsData, null);
+  if (!ticketItemsData.length) document.getElementById('btnCargarTicket').classList.remove('on');
+};
 
 function formatNum(n) {
   return (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 window.cargarItemsTicket = async function() {
-  if (!ticketItemsData.length || !negocioId) return;
+  if (!ticketItemsData.length) { toast('No hay items para cargar'); return; }
+  if (!negocioId) { toast('Cerrá sesión y volvé a entrar'); return; }
+  // Verificar auth
+  const user = firebase.auth().currentUser;
+  if (!user) { toast('Sesión expirada — volvé a entrar'); return; }
   const btn = document.getElementById('btnCargarTicket');
   btn.textContent = 'Cargando...'; btn.disabled = true;
 
