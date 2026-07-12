@@ -2415,18 +2415,15 @@ function formatNum(n) {
 
 window.cargarItemsTicket = async function() {
   if (!ticketItemsData.length) { toast('No hay items para cargar'); return; }
-  if (!negocioId) { toast('Cerrá sesión y volvé a entrar'); return; }
-  // Verificar auth
-  const user = firebase.auth().currentUser;
-  if (!user) { toast('Sesión expirada — volvé a entrar'); return; }
+  const uid = getUserDoc();
+  if (!uid) { toast('Sesión expirada — volvé a entrar'); return; }
   const btn = document.getElementById('btnCargarTicket');
   btn.textContent = 'Cargando...'; btn.disabled = true;
 
   try {
-    // Cargar cada item como una venta en Firestore
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = new Date().toISOString().slice(0,10);
     for (const item of ticketItemsData) {
-      await addDoc(collection(db, 'negocios', negocioId, 'ventas'), {
+      await db.collection('negocios').doc(uid).collection('ventas').add({
         producto:   item.descripcion,
         cantidad:   item.cantidad,
         unidad:     item.unidad || 'kg',
@@ -2434,23 +2431,21 @@ window.cargarItemsTicket = async function() {
         total:      item.subtotal || 0,
         fecha:      hoy,
         origen:     'ticket-scanner',
-        createdAt:  serverTimestamp()
+        createdAt:  firebase.firestore.FieldValue.serverTimestamp()
       });
     }
-    showToast(`✅ ${ticketItemsData.length} items cargados desde ticket`);
-    // Limpiar
+    toast('✅ ' + ticketItemsData.length + ' items cargados desde ticket');
     ticketItemsData = [];
     document.getElementById('ticketPreview').classList.remove('on');
     document.getElementById('ticketItems').innerHTML = '';
     document.getElementById('btnCargarTicket').classList.remove('on');
     document.getElementById('inputTicket').value = '';
-    // Volver a ventas
-    activarTab('ventas');
+    switchTab('ventas');
   } catch(e) {
     logError('cargarItemsTicket', e.message);
-    showToast('Error al cargar items', 'error');
+    toast('Error: ' + e.message);
   } finally {
-    btn.textContent = '✅ Cargar venta con estos items'; btn.disabled = false;
+    btn.textContent = '✅ Confirmar y cargar venta'; btn.disabled = false;
   }
 };
 
