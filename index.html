@@ -2421,19 +2421,24 @@ window.cargarItemsTicket = async function() {
   btn.textContent = 'Cargando...'; btn.disabled = true;
 
   try {
-    const hoy = new Date().toISOString().slice(0,10);
-    for (const item of ticketItemsData) {
-      await db.collection('negocios').doc(uid).collection('ventas').add({
-        producto:   item.descripcion,
-        cantidad:   item.cantidad,
-        unidad:     item.unidad || 'kg',
-        precioUnit: item.precio_unitario || 0,
-        total:      item.subtotal || 0,
-        fecha:      hoy,
-        origen:     'ticket-scanner',
-        createdAt:  firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
+    // Construir items en el mismo formato que las ventas normales de CarneAR
+    const items = ticketItemsData.map(item => ({
+      nombre:   item.descripcion,
+      tamano:   item.cantidad + ' ' + (item.unidad || 'kg'),
+      precio:   item.subtotal || 0,
+      cantidad: 1
+    }));
+    const total = ticketItemsData.reduce((s, i) => s + (i.subtotal || 0), 0);
+
+    await db.collection('negocios').doc(uid).collection('ventas').add({
+      items,
+      total,
+      metodo:     'efectivo',
+      fecha:      firebase.firestore.FieldValue.serverTimestamp(),
+      fechaLocal: new Date().toISOString(),
+      fechaDia:   new Date().toISOString().slice(0,10),
+      origen:     'ticket-scanner'
+    });
     toast('✅ ' + ticketItemsData.length + ' items cargados desde ticket');
     ticketItemsData = [];
     document.getElementById('ticketPreview').classList.remove('on');
