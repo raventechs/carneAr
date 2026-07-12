@@ -230,7 +230,23 @@
       #dashCards .big { font-size:20px; }
       #dashCards h3 { font-size:11px; }
     }
-  </style>
+  
+/* ══ MÓDULO TICKET (Plus) ══ */
+.ticket-scanner{text-align:center;padding:20px 0}
+.ticket-preview{width:100%;max-height:300px;object-fit:contain;border-radius:12px;border:1px solid var(--border);margin:12px 0;display:none}
+.ticket-preview.on{display:block}
+.ticket-items{margin-top:16px}
+.ticket-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.ticket-item-desc{font-weight:600;font-size:0.88rem}
+.ticket-item-detail{font-size:0.75rem;color:var(--muted);margin-top:2px}
+.ticket-item-precio{font-weight:700;color:var(--accent);font-size:0.95rem}
+.ticket-total{background:var(--accent);color:#fff;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-weight:700}
+.ticket-loading{color:var(--muted);font-size:0.84rem;padding:20px;text-align:center}
+.btn-ticket-camara{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:12px;padding:14px 24px;font-size:0.9rem;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-cargar-ticket{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:0.85rem;font-weight:700;cursor:pointer;width:100%;margin-top:8px;display:none}
+.btn-cargar-ticket.on{display:block}
+
+</style>
 </head>
 <body>
 <div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
@@ -407,7 +423,30 @@
     <div id="stockList"></div>
   </div>
 
-  <!-- GASTOS (plus) -->
+  
+<!-- MÓDULO TICKET (Plus) -->
+<div id="tab-ticket" class="tab-content" style="display:none">
+  <h3 style="margin-bottom:16px">📸 Escáner de ticket</h3>
+  <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
+    Sacale una foto al ticket de balanza y la IA carga los items automáticamente.
+  </p>
+  <div class="ticket-scanner">
+    <input type="file" id="inputTicket" accept="image/*" capture="environment" style="display:none" onchange="leerTicket(this)">
+    <button class="btn-ticket-camara" onclick="document.getElementById('inputTicket').click()">
+      📷 Sacar foto del ticket
+    </button>
+    <img id="ticketPreview" class="ticket-preview" alt="Preview ticket">
+    <div id="ticketLoading" class="ticket-loading" style="display:none">
+      🤖 Analizando ticket...
+    </div>
+    <div id="ticketItems" class="ticket-items"></div>
+    <button class="btn-cargar-ticket" id="btnCargarTicket" onclick="cargarItemsTicket()">
+      ✅ Cargar venta con estos items
+    </button>
+  </div>
+</div>
+
+<!-- GASTOS (plus) -->
   <div class="section" id="sec-gastos">
     <h2>💸 Gastos</h2>
     <button class="btn-save" style="width:100%;margin-bottom:14px" id="gastoAddBtn">+ Registrar gasto</button>
@@ -706,7 +745,8 @@ let productos = [];
 let insumos = [];
 let gastos = [];
 let proveedores = [];
-let features = { gastos: false, proveedores: false };
+const TICKET_WORKER_URL = 'https://WORKER-TICKET.rgaraventa.workers.dev'; // ← reemplazar
+let features = { gastos: false, proveedores: false, ticket: false };
 let carrito = [];
 let currentGrupo = null;
 let logoTaps = 0;
@@ -738,6 +778,7 @@ function getTabsForRole() {
     {id:'stock',icon:'📦',label:'Stock'}
   ];
   if(features.gastos) tabs.push({id:'gastos',icon:'💸',label:'Gastos'});
+    if(features.ticket) tabs.push({id:'ticket',icon:'📸',label:'Ticket'});
   if(features.proveedores) tabs.push({id:'proveedores',icon:'🏭',label:'Proveed.'});
   tabs.push({id:'config',icon:'⚙️',label:'Config'});
   return tabs;
@@ -2230,6 +2271,128 @@ function chequearBackupDiario() {
   var el = document.getElementById('ultimoBackupFecha'); if (el && ultimo) el.textContent = ultimo;
   if (ultimo !== hoy) { setTimeout(function(){generarBackup(true);},5000); }
 }
+
+
+// ══ MÓDULO TICKET (Plus) ══════════════════════════
+let ticketItemsData = [];
+
+window.leerTicket = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Mostrar preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('ticketPreview');
+    preview.src = e.target.result;
+    preview.classList.add('on');
+  };
+  reader.readAsDataURL(file);
+
+  // Leer imagen como base64
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Error al leer imagen'));
+    r.readAsDataURL(file);
+  });
+
+  const mediaType = file.type || 'image/jpeg';
+
+  // Llamar al Worker
+  document.getElementById('ticketLoading').style.display = 'block';
+  document.getElementById('ticketItems').innerHTML = '';
+  document.getElementById('btnCargarTicket').classList.remove('on');
+  ticketItemsData = [];
+
+  try {
+    const res = await fetch(TICKET_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imagen: base64, mediaType })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('ticketItems').innerHTML =
+        `<div style="color:var(--danger);text-align:center;padding:16px">${data.error}</div>`;
+      return;
+    }
+
+    ticketItemsData = data.items || [];
+    renderTicketItems(ticketItemsData, data.total);
+
+    if (ticketItemsData.length > 0) {
+      document.getElementById('btnCargarTicket').classList.add('on');
+    }
+  } catch(e) {
+    logError('leerTicket', e.message);
+    document.getElementById('ticketItems').innerHTML =
+      `<div style="color:var(--danger);text-align:center;padding:16px">Error al conectar con el servidor</div>`;
+  } finally {
+    document.getElementById('ticketLoading').style.display = 'none';
+  }
+};
+
+function renderTicketItems(items, total) {
+  const cont = document.getElementById('ticketItems');
+  if (!items.length) {
+    cont.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px">No se encontraron items en el ticket</div>';
+    return;
+  }
+  const html = items.map(item => `
+    <div class="ticket-item">
+      <div>
+        <div class="ticket-item-desc">${item.descripcion}</div>
+        <div class="ticket-item-detail">${item.cantidad} ${item.unidad} × $${formatNum(item.precio_unitario)}</div>
+      </div>
+      <div class="ticket-item-precio">$${formatNum(item.subtotal)}</div>
+    </div>
+  `).join('');
+  const totalHTML = total ? `<div class="ticket-total"><span>TOTAL</span><span>$${formatNum(total)}</span></div>` : '';
+  cont.innerHTML = html + totalHTML;
+}
+
+function formatNum(n) {
+  return (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+window.cargarItemsTicket = async function() {
+  if (!ticketItemsData.length || !negocioId) return;
+  const btn = document.getElementById('btnCargarTicket');
+  btn.textContent = 'Cargando...'; btn.disabled = true;
+
+  try {
+    // Cargar cada item como una venta en Firestore
+    const hoy = new Date().toISOString().slice(0, 10);
+    for (const item of ticketItemsData) {
+      await addDoc(collection(db, 'negocios', negocioId, 'ventas'), {
+        producto:   item.descripcion,
+        cantidad:   item.cantidad,
+        unidad:     item.unidad || 'kg',
+        precioUnit: item.precio_unitario || 0,
+        total:      item.subtotal || 0,
+        fecha:      hoy,
+        origen:     'ticket-scanner',
+        createdAt:  serverTimestamp()
+      });
+    }
+    showToast(`✅ ${ticketItemsData.length} items cargados desde ticket`);
+    // Limpiar
+    ticketItemsData = [];
+    document.getElementById('ticketPreview').classList.remove('on');
+    document.getElementById('ticketItems').innerHTML = '';
+    document.getElementById('btnCargarTicket').classList.remove('on');
+    document.getElementById('inputTicket').value = '';
+    // Volver a ventas
+    activarTab('ventas');
+  } catch(e) {
+    logError('cargarItemsTicket', e.message);
+    showToast('Error al cargar items', 'error');
+  } finally {
+    btn.textContent = '✅ Cargar venta con estos items'; btn.disabled = false;
+  }
+};
 
 </script>
 <!-- MODAL CIERRE -->
