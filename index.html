@@ -2352,25 +2352,33 @@ function entrarEnSucursal(suc) {
   _dashUnsubs.forEach(u => u && u());
   _dashUnsubs.length = 0;
   currentSucursal = suc;
-  document.querySelector('.tabs')?.classList.remove('hidden');
-  document.getElementById('mobNav')?.classList.remove('hidden');
-  // Agregar botón volver al dashboard en topbar
+
+  // Botón volver al dashboard
   const topLeft = document.querySelector('.topbar-left');
-  if (topLeft && limiteSucursales > 1 && sucursales.length > 1) {
-    const existeBtn = document.getElementById('btnVolverDash');
-    if (!existeBtn) {
-      const btn = document.createElement('button');
-      btn.id = 'btnVolverDash';
-      btn.textContent = '← ';
-      btn.style.cssText = 'background:none;border:none;padding:4px;font-size:16px;color:var(--accent);font-weight:700;';
-      btn.onclick = () => { currentSucursal = null; mostrarDashboard(); };
-      topLeft.insertBefore(btn, topLeft.firstChild);
+  if (topLeft) {
+    let btnBack = document.getElementById('btnVolverDash');
+    if (!btnBack) {
+      btnBack = document.createElement('button');
+      btnBack.id = 'btnVolverDash';
+      btnBack.textContent = '←';
+      btnBack.style.cssText = 'background:none;border:none;padding:4px 8px;font-size:18px;color:var(--accent);font-weight:700;cursor:pointer;';
+      btnBack.onclick = () => { currentSucursal = null; mostrarDashboard(); };
+      topLeft.insertBefore(btnBack, topLeft.firstChild);
     }
   }
-  // Actualizar título del topbar
+
+  // Título con sucursal
   const titleEl = document.querySelector('.topbar-title');
   if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ${suc.nombre}</span>`;
-  initApp();
+
+  // Renderizar TODOS los tabs del dueño (Caja, Menú, Reportes, Historial, Stock, Gastos, Ticket, Prov., Config)
+  userRole = 'dueno';
+  const tabs = getTabsForRole();
+  renderTabs(tabs);
+
+  // Suscribir datos de esta sucursal e ir a Caja
+  subscribeData();
+  switchTab('caja');
 }
 
 // ════════════════════════════════════════════════════
