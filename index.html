@@ -1135,13 +1135,7 @@ function switchTab(id) {
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
   if(id==='reportes') loadReportes();
   if(id==='historial') loadHistorial('hoy');
-  if(id==='inicio') {
-    if (limiteSucursales > 1 && sucursales.length > 1) {
-      renderDashboardEnInicio();
-    } else {
-      loadDashboard();
-    }
-  }
+  if(id==='inicio') loadDashboard();
   if(id==='gastos') loadGastos('hoy');
   if(id==='proveedores') renderProveedores();
   if(id==='config') renderSucursalesConfig();
@@ -2242,70 +2236,41 @@ async function cargarConfigSucursales() {
 // Dashboard multi-sucursal
 const _dashUnsubs = [];
 function mostrarDashboard() {
-  // Cancela listeners anteriores del dashboard
   _dashUnsubs.forEach(u => u && u());
   _dashUnsubs.length = 0;
 
-  // El dashboard vive DENTRO de sec-inicio — tabs siempre visibles
-  switchTab('inicio');
-  renderDashboardEnInicio();
-}
-
-function renderDashboardEnInicio() {
-  const sec = document.getElementById('sec-inicio');
-  if (!sec) return;
-  const uid = getUserDoc();
-  const hoy = new Date().toISOString().split('T')[0];
+  const grid = document.getElementById('sucursalesCards');
+  grid.innerHTML = '';
   const totales = {};
-
-  const nombre = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Propietario';
-
-  sec.innerHTML = `
-    <div style="background:var(--accent);color:#fff;border-radius:var(--radius);margin:12px;padding:16px;">
-      <div style="font-size:12px;opacity:.8">Bienvenido/a,</div>
-      <div style="font-size:20px;font-weight:700;margin:4px 0 12px">${nombre}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
-          <div style="font-size:10px;opacity:.8">Ventas hoy (total)</div>
-          <div id="dashTotalHoy" style="font-size:18px;font-weight:700">$0</div>
-        </div>
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
-          <div style="font-size:10px;opacity:.8">Sucursales activas</div>
-          <div style="font-size:18px;font-weight:700">${sucursales.filter(s=>s.activa!==false).length}</div>
-        </div>
-      </div>
-    </div>
-    <div style="padding:4px 12px 8px;font-size:13px;font-weight:700;color:var(--text2)">Mis Sucursales — tocá para entrar</div>
-    <div id="sucGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 16px"></div>`;
-
-  const grid = document.getElementById('sucGrid');
+  const hoy = new Date().toISOString().split('T')[0];
+  let activas = sucursales.filter(s => s.activa !== false).length;
+  document.getElementById('dashSucActivas').textContent = activas;
+  document.getElementById('dashNombre').textContent =
+    currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Propietario';
 
   sucursales.forEach(suc => {
     totales[suc.id] = 0;
     const card = document.createElement('div');
     card.className = 'suc-card';
-    card.style.cssText = 'background:var(--surface);border:2px solid var(--borde);border-radius:var(--radius);padding:14px;cursor:pointer;position:relative;overflow:hidden;';
-    card.innerHTML = `
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)"></div>
-      <div style="font-size:14px;font-weight:700;margin-bottom:8px">🏪 ${suc.nombre}</div>
-      <div style="font-size:10px;color:var(--text2);margin-bottom:2px">Ventas hoy</div>
-      <div id="sv-${suc.id}" style="font-size:20px;font-weight:700;color:var(--verde)">$0</div>
-      <span style="display:inline-block;background:rgba(39,174,96,.12);color:var(--verde);font-size:10px;padding:2px 8px;border-radius:10px;margin-top:6px">${suc.activa!==false?'● Activa':'● Inactiva'}</span>`;
+    card.innerHTML = `<div class="suc-card-nom">🏪 ${suc.nombre}</div>
+      <div class="suc-card-lbl">Ventas hoy</div>
+      <div class="suc-card-val" id="svhoy-${suc.id}">$0</div>
+      <span class="badge-activa">${suc.activa !== false ? '● Activa' : '● Inactiva'}</span>`;
     card.onclick = () => entrarEnSucursal(suc);
     grid.appendChild(card);
 
-    // Listener tiempo real ventas de esta sucursal
+    const uid = getUserDoc();
     const u = db.collection('negocios').doc(uid).collection('sucursales').doc(suc.id)
-      .collection('ventas').where('fecha', '==', hoy)
+      .collection('ventas').where('fechaDia', '==', hoy)
       .onSnapshot(snap => {
         let t = 0; snap.forEach(d => t += d.data().total || 0);
         totales[suc.id] = t;
-        const el = document.getElementById('sv-' + suc.id);
+        const el = document.getElementById('svhoy-' + suc.id);
         if (el) el.textContent = '$' + t.toLocaleString('es-AR');
-        const total = Object.values(totales).reduce((a,b) => a+b, 0);
-        const elT = document.getElementById('dashTotalHoy');
-        if (elT) elT.textContent = '$' + total.toLocaleString('es-AR');
-      }, () => {});
+        const globalTotal = Object.values(totales).reduce((a, b) => a + b, 0);
+        const elT = document.getElementById('dashTotalGlobal');
+        if (elT) elT.textContent = '$' + globalTotal.toLocaleString('es-AR');
+      }, e => logError('dashListener', e));
     _dashUnsubs.push(u);
   });
 
@@ -2328,22 +2293,31 @@ function renderDashboardEnInicio() {
 
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-dashboard').classList.add('active');
-  document.querySelector('.tabs')?.classList.add('hidden');
-  document.getElementById('mobNav')?.classList.add('hidden');
 }
 
 function entrarEnSucursal(suc) {
   _dashUnsubs.forEach(u => u && u());
   _dashUnsubs.length = 0;
   currentSucursal = suc;
-
-  // Actualizar título con sucursal actual
+  document.querySelector('.tabs')?.classList.remove('hidden');
+  document.getElementById('mobNav')?.classList.remove('hidden');
+  // Agregar botón volver al dashboard en topbar
+  const topLeft = document.querySelector('.topbar-left');
+  if (topLeft && limiteSucursales > 1 && sucursales.length > 1) {
+    const existeBtn = document.getElementById('btnVolverDash');
+    if (!existeBtn) {
+      const btn = document.createElement('button');
+      btn.id = 'btnVolverDash';
+      btn.textContent = '← ';
+      btn.style.cssText = 'background:none;border:none;padding:4px;font-size:16px;color:var(--accent);font-weight:700;';
+      btn.onclick = () => { currentSucursal = null; mostrarDashboard(); };
+      topLeft.insertBefore(btn, topLeft.firstChild);
+    }
+  }
+  // Actualizar título del topbar
   const titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <small style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">— ${suc.nombre}</small>`;
-
-  // Ir a caja con datos de esa sucursal
-  subscribeData();
-  switchTab('caja');
+  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ${suc.nombre}</span>`;
+  initApp();
 }
 
 // ════════════════════════════════════════════════════
