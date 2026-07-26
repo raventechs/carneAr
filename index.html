@@ -2247,6 +2247,10 @@ async function iniciarCajeroLink(codigo) {
     currentSucursal = { id: d.sucursalId, nombre: d.nomSucursal || 'Sucursal' };
     userRole = 'cajero';
     currentUser = firebase.auth().currentUser;
+    try {
+      const negDoc = await db.collection('negocios').doc(d.uid || ownerUid).get();
+      if (negDoc.exists && negDoc.data().features) features = Object.assign(features, negDoc.data().features);
+    } catch(_) {}
     initApp();
   } catch(e) { logError('iniciarCajeroLink', e.message); }
 }
