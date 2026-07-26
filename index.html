@@ -624,6 +624,17 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
   </div>
 </div>
 
+
+<!-- MODAL RAVENTECHS — Panel oculto PIN 2580 -->
+<div id="modalRaven" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:flex-end;justify-content:center;">
+  <div id="modalRavenInner" style="background:var(--surface);border-radius:20px 20px 0 0;padding:0 0 32px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid var(--borde);">
+      <span style="font-size:16px;font-weight:700;">🦅 RavenTechs — Features Plus</span>
+      <button onclick="cerrarModalRaven()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;">✕</button>
+    </div>
+    <div id="ravenContent" style="padding:0 20px 8px;"></div>
+  </div>
+</div>
 <!-- BOTTOM NAV -->
 <div class="mob-nav hidden" id="mobNav"></div>
 
@@ -937,19 +948,20 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
     auth.onAuthStateChanged(user => {
-      if (user && !user.isAnonymous) {
+      if(user && !user.isAnonymous) {
         currentUser = user;
         userRole = 'dueno';
+        // Entra al app de inmediato (igual que v1.3), luego verifica sucursales
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-        setTimeout(() => verificarMultiSucursal(), 800);
-      } else if (user && user.isAnonymous && !_codigoLink) {
+        setTimeout(() => verificarMultiSucursal(), 600);
+      } else if(user && user.isAnonymous && !_codigoLink) {
         currentUser = user;
         userRole = 'cajero';
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-      } else if (user && user.isAnonymous && _codigoLink) {
-        // cajero por link — iniciarCajeroLink lo maneja
+      } else if(user && user.isAnonymous && _codigoLink) {
+        // El código link maneja el resto en iniciarCajeroLink
       } else {
         showLogin();
       }
@@ -1054,7 +1066,7 @@ function showError(msg) { document.getElementById('loginError').textContent = ms
 
 async function loginGoogle() {
   try {
-    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
   } catch(e) { showError(e.message); }
 }
 
@@ -2052,9 +2064,6 @@ function handleLogoTap() {
 }
 
 function showFeaturesPanel() {
-  const area = document.getElementById('featuresPanelArea');
-  area.classList.remove('hidden');
-
   const makeToggle = (key, icon, label) => {
     const checked = features[key] ? 'checked' : '';
     return `<div class="feature-toggle">
@@ -2066,9 +2075,8 @@ function showFeaturesPanel() {
     </div>`;
   };
 
-  area.innerHTML = `
-    <div class="features-panel">
-      <h3>🦅 RavenTechs — Features Plus</h3>
+  document.getElementById('ravenContent').innerHTML = `
+    <div class="features-panel" style="margin-top:12px">
       ${makeToggle('gastos','💸','Gastos')}
       ${makeToggle('proveedores','🏭','Proveedores')}
       ${makeToggle('ticket','📸','Escáner de tickets')}
@@ -2079,22 +2087,21 @@ function showFeaturesPanel() {
           <input type="number" id="inputLimSuc" min="1" max="99" value="${limiteSucursales}" style="width:48px;padding:5px 8px;text-align:center;font-size:13px;" onchange="setLimiteSucursales(this.value)">
         </div>
       </div>
-
-      <div class="feature-toggle">
-        <span>📱 Pedidos online</span>
-        <span class="text-sm">Próximamente</span>
-      </div>
-      <div class="feature-toggle">
-        <span>👥 Empleados</span>
-        <span class="text-sm">Próximamente</span>
-      </div>
+      <div class="feature-toggle"><span>📱 Pedidos online</span><span class="text-sm">Próximamente</span></div>
+      <div class="feature-toggle"><span>👥 Empleados</span><span class="text-sm">Próximamente</span></div>
     </div>
   `;
-  switchTab('config');
+
+  const modal = document.getElementById('modalRaven');
+  modal.style.display = 'flex';
+  modal.onclick = e => { if(e.target===modal) cerrarModalRaven(); };
   toast('Panel RavenTechs activado');
-  // Actualizar input de limite
   const limEl = document.getElementById('inputLimSuc');
   if (limEl) limEl.value = limiteSucursales;
+}
+
+function cerrarModalRaven() {
+  document.getElementById('modalRaven').style.display = 'none';
 }
 
 async function toggleFeature(key, value) {
@@ -2107,7 +2114,7 @@ async function toggleFeature(key, value) {
     features[key] = value;
     const tabs = getTabsForRole();
     renderTabs(tabs);
-    showFeaturesPanel();
+    if(document.getElementById('modalRaven').style.display !== 'none') showFeaturesPanel();
     toast(`${key} ${value?'activado':'desactivado'}`);
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -2170,7 +2177,6 @@ async function iniciarCajeroLink(codigo) {
 }
 
 
-// ── verificarMultiSucursal ─────────────────────────────────────
 async function verificarMultiSucursal() {
   const uid = getUserDoc();
   if (!uid) return;
@@ -2179,22 +2185,15 @@ async function verificarMultiSucursal() {
     if (negDoc.exists) {
       const d = negDoc.data();
       limiteSucursales = d.limiteSucursales || 1;
-      if (d.features) {
-        features = Object.assign(features, d.features);
-        renderTabs(getTabsForRole());
-      }
+      if (d.features) { features = Object.assign(features, d.features); renderTabs(getTabsForRole()); }
     }
     if (limiteSucursales > 1) {
-      const snap = await db.collection('negocios').doc(uid)
-        .collection('sucursales').orderBy('nombre').get();
+      const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
       sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       if (sucursales.length > 1) mostrarDashboard();
     }
-  } catch(e) {
-    console.log('verificarMultiSucursal (no crítico):', e.message);
-  }
+  } catch(e) { console.log('verificarMultiSucursal:', e.message); }
 }
-// ──────────────────────────────────────────────────────────────
 
 // Cargar config multi-sucursal al iniciar
 async function cargarConfigSucursales() {
