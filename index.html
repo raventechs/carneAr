@@ -454,11 +454,7 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
     </div>
     <h2 style="margin-bottom:12px;">Mis Sucursales</h2>
     <div id="sucursalesCards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-    <div style="margin-top:12px;display:flex;gap:8px;">
-      <button id="dashConfigBtn" style="flex:1;padding:12px;font-size:13px;">⚙️ Configuración</button>
-      <button id="dashThemeBtn" style="padding:12px;font-size:18px;">🌙</button>
-      <button id="dashLogoutBtn" style="padding:12px;font-size:13px;">🚪 Salir</button>
-    </div>
+
   </div>
 
   <!-- DASHBOARD (inicio dueño) -->
@@ -2288,8 +2284,6 @@ function mostrarDashboard() {
 
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-dashboard').classList.add('active');
-  document.querySelector('.tabs')?.classList.add('hidden');
-  document.getElementById('mobNav')?.classList.add('hidden');
 }
 
 function entrarEnSucursal(suc) {
