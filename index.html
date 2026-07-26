@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v1.3
-  Fecha de esta versión: 2026-07-01
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.0
+  Fecha de esta versión: 2026-07-25
   Cambios respecto a v1.2: Gastos y Proveedores como features
   plus (bloqueados por defecto, se activan desde panel RavenTechs
   5 toques + PIN 1990). Gastos: CRUD completo con filtro
@@ -14,8 +14,8 @@
   Roles: cajero ve Caja+Menú+Stock; dueño ve todo + tabs
   dinámicos según features activados.
   Firebase: carnear-1d2c4.
-  PENDIENTE: activar Authentication, autorizar raventechs.lat,
-  publicar reglas de Firestore.
+  v2.0: Dashboard multi-sucursal, logo tomahawk, cajero por link WhatsApp por sucursal.
+  Feature flag limiteSucursales en panel RavenTechs.
   ════════════════════════════════════════════════════════════
 -->
 <html lang="es">
@@ -201,6 +201,14 @@
     .badge-cat { display:inline-block; background:var(--accent); color:#fff; font-size:10px; padding:2px 8px; border-radius:10px; margin-bottom:4px; }
     .empty-state { text-align:center; padding:40px 20px; color:var(--text2); }
     .empty-state p { font-size:14px; }
+    /* ══ MULTI-SUCURSAL ══ */
+    .suc-card { background:var(--surface); border:2px solid var(--borde); border-radius:var(--radius); padding:14px; cursor:pointer; transition:transform .12s; position:relative; overflow:hidden; }
+    .suc-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--accent); }
+    .suc-card:active { transform:scale(.96); }
+    .suc-card-nom { font-size:14px; font-weight:700; margin-bottom:8px; }
+    .suc-card-val { font-size:20px; font-weight:700; color:var(--verde); }
+    .suc-card-lbl { font-size:10px; color:var(--text2); margin-bottom:2px; }
+    .badge-activa { display:inline-block; background:rgba(39,174,96,.12); color:var(--verde); font-size:10px; padding:2px 8px; border-radius:10px; margin-top:6px; }
 
     /* ══ PIN MODAL ══ */
     .pin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:600; align-items:center; justify-content:center; }
@@ -338,25 +346,23 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 <!-- ══ LOADING SCREEN ══ -->
 <div id="loading">
   <div class="loader-meat">
-    <svg viewBox="-5 35 110 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- grasa exterior -->
-        <ellipse cx="50" cy="52" rx="44" ry="32" fill="#f0d4a0" stroke="#c8994a" stroke-width="2"/>
-        <!-- carne roja -->
-        <ellipse cx="50" cy="53" rx="34" ry="22" fill="#c0392b"/>
-        <!-- veta grasa interna -->
-        <ellipse cx="42" cy="47" rx="12" ry="4.5" fill="#e8c88a" opacity=".85" transform="rotate(-10 42 47)"/>
-        <ellipse cx="60" cy="59" rx="9" ry="3.5" fill="#e8c88a" opacity=".65" transform="rotate(8 60 59)"/>
-        <!-- sombra profundidad -->
-        <ellipse cx="50" cy="55" rx="26" ry="14" fill="#922b21" opacity=".4"/>
-        <!-- hueso izquierdo T-bone -->
-        <rect x="4" y="40" width="8" height="22" rx="4" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="8" cy="40" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="8" cy="62" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <!-- hueso derecho T-bone -->
-        <rect x="88" y="40" width="8" height="22" rx="4" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="92" cy="40" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="92" cy="62" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-      </svg>
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sombra/grosor 3D inferior -->
+          <path d="M14,73 Q18,84 38,90 Q61,96 81,83 Q93,74 91,63 L86,66 Q88,75 77,81 Q59,91 38,85 Q21,80 18,72Z" fill="#c8926a" opacity=".85"/>
+          <!-- Grasa exterior (borde crema) -->
+          <path d="M12,57 Q9,38 23,26 Q38,11 62,10 Q82,9 92,26 Q100,41 96,61 Q92,77 74,85 Q56,93 34,88 Q14,82 12,69Z" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
+          <!-- Carne roja interior -->
+          <path d="M21,56 Q18,40 31,30 Q44,17 65,15 Q82,14 90,30 Q97,43 93,60 Q89,74 72,81 Q56,88 37,84 Q23,79 21,67Z" fill="#c0392b"/>
+          <!-- Marcas de parrilla (diagonales, igual a la imagen) -->
+          <line x1="47" y1="23" x2="84" y2="58" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
+          <line x1="41" y1="34" x2="80" y2="68" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
+          <line x1="36" y1="47" x2="73" y2="79" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
+          <!-- Hueso (círculo en esquina superior izquierda del bife) -->
+          <circle cx="37" cy="37" r="9" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
+          <circle cx="37" cy="37" r="5.5" fill="#e8c48e"/>
+          <!-- Brillo de superficie -->
+          <path d="M70,17 Q85,25 89,41" stroke="#e05050" stroke-width="5" stroke-linecap="round" fill="none" opacity=".3"/>
+        </svg>
   </div>
   <div class="loader-text">CarneAR</div>
   <div class="loader-sub">Preparando el mostrador…</div>
@@ -366,25 +372,23 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 <div id="login">
   <div class="login-card">
     <div class="login-logo">
-      <svg viewBox="-5 35 110 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- grasa exterior -->
-        <ellipse cx="50" cy="52" rx="44" ry="32" fill="#f0d4a0" stroke="#c8994a" stroke-width="2"/>
-        <!-- carne roja -->
-        <ellipse cx="50" cy="53" rx="34" ry="22" fill="#c0392b"/>
-        <!-- veta grasa interna -->
-        <ellipse cx="42" cy="47" rx="12" ry="4.5" fill="#e8c88a" opacity=".85" transform="rotate(-10 42 47)"/>
-        <ellipse cx="60" cy="59" rx="9" ry="3.5" fill="#e8c88a" opacity=".65" transform="rotate(8 60 59)"/>
-        <!-- sombra profundidad -->
-        <ellipse cx="50" cy="55" rx="26" ry="14" fill="#922b21" opacity=".4"/>
-        <!-- hueso izquierdo T-bone -->
-        <rect x="4" y="40" width="8" height="22" rx="4" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="8" cy="40" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="8" cy="62" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <!-- hueso derecho T-bone -->
-        <rect x="88" y="40" width="8" height="22" rx="4" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="92" cy="40" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-        <ellipse cx="92" cy="62" rx="8" ry="6" fill="#f5f0e0" stroke="#c8b98a" stroke-width="1.5"/>
-      </svg>
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sombra/grosor 3D inferior -->
+          <path d="M14,73 Q18,84 38,90 Q61,96 81,83 Q93,74 91,63 L86,66 Q88,75 77,81 Q59,91 38,85 Q21,80 18,72Z" fill="#c8926a" opacity=".85"/>
+          <!-- Grasa exterior (borde crema) -->
+          <path d="M12,57 Q9,38 23,26 Q38,11 62,10 Q82,9 92,26 Q100,41 96,61 Q92,77 74,85 Q56,93 34,88 Q14,82 12,69Z" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
+          <!-- Carne roja interior -->
+          <path d="M21,56 Q18,40 31,30 Q44,17 65,15 Q82,14 90,30 Q97,43 93,60 Q89,74 72,81 Q56,88 37,84 Q23,79 21,67Z" fill="#c0392b"/>
+          <!-- Marcas de parrilla (diagonales, igual a la imagen) -->
+          <line x1="47" y1="23" x2="84" y2="58" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
+          <line x1="41" y1="34" x2="80" y2="68" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
+          <line x1="36" y1="47" x2="73" y2="79" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
+          <!-- Hueso (círculo en esquina superior izquierda del bife) -->
+          <circle cx="37" cy="37" r="9" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
+          <circle cx="37" cy="37" r="5.5" fill="#e8c48e"/>
+          <!-- Brillo de superficie -->
+          <path d="M70,17 Q85,25 89,41" stroke="#e05050" stroke-width="5" stroke-linecap="round" fill="none" opacity=".3"/>
+        </svg>
     </div>
     <h1>Carne<span>AR</span></h1>
     <p>Caja registradora para carnicerías</p>
@@ -414,10 +418,12 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
     <div class="topbar-left">
       <button id="logoBtn" aria-label="CarneAR">
         <svg class="topbar-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="50" cy="52" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
-          <ellipse cx="42" cy="47" rx="10" ry="6" fill="#B22222" opacity=".7"/>
-          <ellipse cx="60" cy="57" rx="8" ry="5" fill="#CD5C5C" opacity=".5"/>
-          <path d="M22 38 Q18 30 24 26 L30 30 Q26 33 24 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
+          <path d="M12,57 Q9,38 23,26 Q38,11 62,10 Q82,9 92,26 Q100,41 96,61 Q92,77 74,85 Q56,93 34,88 Q14,82 12,69Z" fill="#8B0000"/>
+          <path d="M21,56 Q18,40 31,30 Q44,17 65,15 Q82,14 90,30 Q97,43 93,60 Q89,74 72,81 Q56,88 37,84 Q23,79 21,67Z" fill="#c0392b"/>
+          <line x1="47" y1="23" x2="84" y2="58" stroke="#5a0000" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+          <line x1="41" y1="34" x2="80" y2="68" stroke="#5a0000" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+          <circle cx="37" cy="37" r="9" fill="#8B0000" stroke="#5a0000" stroke-width="2"/>
+          <circle cx="37" cy="37" r="5" fill="#7b1208"/>
         </svg>
       </button>
       <span class="topbar-title">Carne<span>AR</span></span>
@@ -429,6 +435,31 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
   </header>
 
   <div class="tabs" id="tabsBar"></div>
+
+  <!-- DASHBOARD MULTI-SUCURSAL (solo visible si limiteSucursales > 1) -->
+  <div class="section" id="sec-dashboard">
+    <div style="background:var(--accent);color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:14px;">
+      <div style="font-size:12px;opacity:.8;">Bienvenido/a,</div>
+      <div id="dashNombre" style="font-size:20px;font-weight:700;margin:4px 0 12px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;">
+          <div style="font-size:10px;opacity:.8;">Ventas hoy (total)</div>
+          <div id="dashTotalGlobal" style="font-size:18px;font-weight:700;">$0</div>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;">
+          <div style="font-size:10px;opacity:.8;">Sucursales activas</div>
+          <div id="dashSucActivas" style="font-size:18px;font-weight:700;">0</div>
+        </div>
+      </div>
+    </div>
+    <h2 style="margin-bottom:12px;">Mis Sucursales</h2>
+    <div id="sucursalesCards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button id="dashConfigBtn" style="flex:1;padding:12px;font-size:13px;">⚙️ Configuración</button>
+      <button id="dashThemeBtn" style="padding:12px;font-size:18px;">🌙</button>
+      <button id="dashLogoutBtn" style="padding:12px;font-size:13px;">🚪 Salir</button>
+    </div>
+  </div>
 
   <!-- DASHBOARD (inicio dueño) -->
   <div class="section" id="sec-inicio">
@@ -718,6 +749,20 @@ const PIN_CAJERO = '2468';
 const PIN_ADMIN = '2580';
 const ADMIN_EMAIL = 'rgaraventa@gmail.com';
 
+// ── HELPER: colección scoped por sucursal ──
+// Si currentSucursal es null o 'principal' → usa ruta existente (backward compatible)
+// Si es otra sucursal → usa ruta scoped bajo sucursales/{id}/
+function col(name) {
+  const uid = getUserDoc();
+  if (!uid) return null;
+  if (!currentSucursal || currentSucursal.id === 'principal') {
+    return col(name);
+  }
+  return db.collection('negocios').doc(uid)
+           .collection('sucursales').doc(currentSucursal.id)
+           .collection(name);
+}
+
 const GRUPOS_MAP = {
   'Vacuna': 'Vacuna',
   'Cerdo': 'Cerdo',
@@ -825,6 +870,10 @@ const INSUMOS_BASICOS = [
 // ══════════ STATE ══════════
 let currentUser = null;
 let userRole = 'dueno'; // dueno | cajero
+// ── MULTI-SUCURSAL ──
+let currentSucursal = null;   // null = principal (datos en raíz, backward compatible)
+let sucursales = [];
+let limiteSucursales = 1;
 let productos = [];
 let insumos = [];
 let gastos = [];
@@ -879,11 +928,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if(user && !user.isAnonymous) {
         currentUser = user;
         userRole = 'dueno';
-        initApp();
-      } else if(user && user.isAnonymous) {
+        cargarConfigSucursales(); // carga sucursales → decide si dashboard o directo
+      } else if(user && user.isAnonymous && !_codigoLink) {
         currentUser = user;
         userRole = 'cajero';
+        currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
+      } else if(user && user.isAnonymous && _codigoLink) {
+        // El código link maneja el resto en iniciarCajeroLink
       } else {
         showLogin();
       }
@@ -1091,25 +1143,25 @@ function subscribeData() {
     }
   }, err => console.error('Features error:',err));
 
-  unsubProductos = db.collection('negocios').doc(uid).collection('productos')
+  unsubProductos = col('productos')
     .orderBy('nombre').onSnapshot(snap => {
       productos = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderPOS();
       renderMenu();
     }, err => console.error('Productos error:',err));
 
-  unsubInsumos = db.collection('negocios').doc(uid).collection('insumos')
+  unsubInsumos = col('insumos')
     .orderBy('nombre').onSnapshot(snap => {
       insumos = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderStock();
     }, err => console.error('Insumos error:',err));
 
-  unsubGastos = db.collection('negocios').doc(uid).collection('gastos')
+  unsubGastos = col('gastos')
     .orderBy('fecha','desc').onSnapshot(snap => {
       gastos = snap.docs.map(d => ({id:d.id,...d.data()}));
     }, err => console.error('Gastos error:',err));
 
-  unsubProveedores = db.collection('negocios').doc(uid).collection('proveedores')
+  unsubProveedores = col('proveedores')
     .orderBy('nombre').onSnapshot(snap => {
       proveedores = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderProveedores();
@@ -1241,7 +1293,7 @@ async function confirmarVenta() {
       toast('Venta guardada offline');
       return;
     }
-    await db.collection('negocios').doc(uid).collection('ventas').add({
+    await col('ventas').add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
       fechaLocal: new Date().toISOString(),
@@ -1256,7 +1308,7 @@ async function confirmarVenta() {
           const insumo = insumos.find(ins=>ins.id===ing.insumoId);
           if(insumo) {
             const newCant = Math.max(0, (insumo.cantidad||0) - (ing.cantidad * item.cantidad));
-            await db.collection('negocios').doc(uid).collection('insumos').doc(insumo.id).update({cantidad:newCant});
+            await col('insumos').doc(insumo.id).update({cantidad:newCant});
           }
         }
       }
@@ -1401,9 +1453,9 @@ async function guardarProducto() {
 
   try {
     if(editingProductId) {
-      await db.collection('negocios').doc(uid).collection('productos').doc(editingProductId).update(data);
+      await col('productos').doc(editingProductId).update(data);
     } else {
-      await db.collection('negocios').doc(uid).collection('productos').add(data);
+      await col('productos').add(data);
     }
     document.getElementById('modalProducto').classList.remove('show');
     toast(editingProductId ? 'Producto actualizado' : 'Producto creado');
@@ -1414,7 +1466,7 @@ async function deleteProduct(id) {
   if(!confirm('¿Eliminar este producto?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('productos').doc(id).delete();
+    await col('productos').doc(id).delete();
     toast('Producto eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -1450,7 +1502,7 @@ async function adjustStock(id, direction) {
   if(!ins) return;
   const newCant = Math.max(0, (ins.cantidad||0) + (amount * direction));
   try {
-    await db.collection('negocios').doc(uid).collection('insumos').doc(id).update({cantidad:newCant});
+    await col('insumos').doc(id).update({cantidad:newCant});
   } catch(e) { toast('Error: '+e.message); }
 }
 
@@ -1475,9 +1527,9 @@ async function guardarInsumo() {
 
   try {
     if(editingStockId) {
-      await db.collection('negocios').doc(uid).collection('insumos').doc(editingStockId).update({nombre,unidad,cantidad,umbral});
+      await col('insumos').doc(editingStockId).update({nombre,unidad,cantidad,umbral});
     } else {
-      await db.collection('negocios').doc(uid).collection('insumos').add({nombre,unidad,cantidad,umbral});
+      await col('insumos').add({nombre,unidad,cantidad,umbral});
     }
     document.getElementById('modalStock').classList.remove('show');
     editingStockId = null;
@@ -1489,7 +1541,7 @@ async function deleteInsumo(id) {
   if(!confirm('¿Eliminar este insumo?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('insumos').doc(id).delete();
+    await col('insumos').doc(id).delete();
     toast('Insumo eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -1503,7 +1555,7 @@ async function cargarInsumosBasicos() {
       // Avoid duplicates by name
       const existing = insumos.find(i => i.nombre.toLowerCase() === ins.nombre.toLowerCase());
       if(!existing) {
-        await db.collection('negocios').doc(uid).collection('insumos').add(ins);
+        await col('insumos').add(ins);
         count++;
       }
     }
@@ -1532,7 +1584,7 @@ async function loadDashboard() {
 
   try {
     // Traer ventas del mes (incluye semana y hoy)
-    const snap = await db.collection('negocios').doc(uid).collection('ventas')
+    const snap = await col('ventas')
       .where('fecha','>=',mesStart).get();
 
     let hoyTotal=0, hoyCount=0, semTotal=0, semCount=0, mesTotal=0, mesCount=0;
@@ -1561,7 +1613,7 @@ async function loadDashboard() {
   if(features.gastos) {
     try {
       const mesStart2 = new Date(now.getFullYear(), now.getMonth(), 1);
-      const gSnap = await db.collection('negocios').doc(uid).collection('gastos')
+      const gSnap = await col('gastos')
         .where('fecha','>=',mesStart2).get();
       let gastosMes = 0;
       gSnap.forEach(doc => { gastosMes += doc.data().monto || 0; });
@@ -1603,7 +1655,7 @@ async function loadReportes() {
   today.setHours(0,0,0,0);
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('ventas')
+    const snap = await col('ventas')
       .where('fecha','>=',today).get();
     let totalVentas = 0, totalIngresos = 0, efectivo = 0, transferencia = 0;
     snap.forEach(doc => {
@@ -1645,7 +1697,7 @@ async function loadHistorial(filter) {
     let ventas = [];
 
     if (estaOnline) {
-      const snap = await db.collection('negocios').doc(uid).collection('ventas')
+      const snap = await col('ventas')
         .where('fechaDia','>=',desdeDia).where('fechaDia','<=',hastaDia)
         .orderBy('fechaDia','desc').get();
       snap.forEach(doc => ventas.push(doc.data()));
@@ -1699,14 +1751,14 @@ async function restablecerCatalogo() {
 
   try {
     // Delete all current products
-    const snap = await db.collection('negocios').doc(uid).collection('productos').get();
+    const snap = await col('productos').get();
     const batch1 = db.batch();
     snap.forEach(doc => batch1.delete(doc.ref));
     await batch1.commit();
 
     // Add example catalog
     for(const p of CATALOGO_EJEMPLO) {
-      await db.collection('negocios').doc(uid).collection('productos').add({
+      await col('productos').add({
         nombre: p.nombre,
         categoria: p.categoria,
         tamanos: p.tamanos,
@@ -1720,7 +1772,7 @@ async function restablecerCatalogo() {
 async function limpiarDuplicados() {
   const uid = getUserDoc();
   if(!uid) return;
-  const snap = await db.collection('negocios').doc(uid).collection('productos').get();
+  const snap = await col('productos').get();
   const seen = {};
   let removed = 0;
   const batch = db.batch();
@@ -1785,9 +1837,9 @@ async function guardarGasto() {
 
   try {
     if(editingGastoId) {
-      await db.collection('negocios').doc(uid).collection('gastos').doc(editingGastoId).update(data);
+      await col('gastos').doc(editingGastoId).update(data);
     } else {
-      await db.collection('negocios').doc(uid).collection('gastos').add(data);
+      await col('gastos').add(data);
     }
     document.getElementById('modalGasto').classList.remove('show');
     editingGastoId = null;
@@ -1800,7 +1852,7 @@ async function deleteGasto(id) {
   if(!confirm('¿Eliminar este gasto?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('gastos').doc(id).delete();
+    await col('gastos').doc(id).delete();
     toast('Gasto eliminado');
     loadGastos(document.querySelector('#gastosFilters .active').dataset.gf);
   } catch(e) { toast('Error: '+e.message); }
@@ -1822,7 +1874,7 @@ async function loadGastos(filter) {
   }
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('gastos')
+    const snap = await col('gastos')
       .where('fecha','>=',desde).orderBy('fecha','desc').get();
 
     let totalGastos = 0;
@@ -1889,9 +1941,9 @@ async function guardarProveedor() {
 
   try {
     if(editingProvId) {
-      await db.collection('negocios').doc(uid).collection('proveedores').doc(editingProvId).update(data);
+      await col('proveedores').doc(editingProvId).update(data);
     } else {
-      await db.collection('negocios').doc(uid).collection('proveedores').add(data);
+      await col('proveedores').add(data);
     }
     document.getElementById('modalProv').classList.remove('show');
     editingProvId = null;
@@ -1903,7 +1955,7 @@ async function deleteProveedor(id) {
   if(!confirm('¿Eliminar este proveedor?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('proveedores').doc(id).delete();
+    await col('proveedores').doc(id).delete();
     toast('Proveedor eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -2002,6 +2054,18 @@ function showFeaturesPanel() {
       ${makeToggle('proveedores','🏭','Proveedores')}
       ${makeToggle('ticket','📸','Escáner de tickets')}
       <div class="feature-toggle">
+        <span>🏪 Multi-sucursal <span style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px">PLUS</span></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:var(--text2)">Límite:</span>
+          <input type="number" id="inputLimSuc" min="1" max="99" value="${limiteSucursales}" style="width:48px;padding:5px 8px;text-align:center;font-size:13px;" onchange="setLimiteSucursales(this.value)">
+        </div>
+      </div>
+      <div style="margin-top:12px;border-top:1px solid var(--borde);padding-top:12px;">
+        <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">🏪 Gestión de sucursales</h4>
+        <div id="adminSucList"></div>
+        <button onclick="abrirModalSucursal()" style="width:100%;margin-top:8px;background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">+ Nueva sucursal</button>
+      </div>
+      <div class="feature-toggle">
         <span>📱 Pedidos online</span>
         <span class="text-sm">Próximamente</span>
       </div>
@@ -2013,6 +2077,11 @@ function showFeaturesPanel() {
   `;
   switchTab('config');
   toast('Panel RavenTechs activado');
+  // Cargar sucursales en el panel
+  setTimeout(() => { cargarAdminSucursales(); }, 100);
+  // Actualizar input de limite
+  const limEl = document.getElementById('inputLimSuc');
+  if (limEl) limEl.value = limiteSucursales;
 }
 
 async function toggleFeature(key, value) {
@@ -2060,6 +2129,261 @@ function toast(msg) {
     } catch(e) { logError('exportCSV', e); }
   }
 
+
+// ══════════════════════════════════════════════
+// MULTI-SUCURSAL — Dashboard y gestión
+// ══════════════════════════════════════════════
+
+// Detectar acceso de cajero por link WhatsApp (?s=CODIGO)
+const _urlParams = new URLSearchParams(location.search);
+const _codigoLink = _urlParams.get('s');
+if (_codigoLink && !firebase.auth().currentUser) {
+  firebase.auth().signInAnonymously().then(() => {
+    iniciarCajeroLink(_codigoLink);
+  }).catch(e => logError('cajeroLink', e.message));
+}
+
+async function iniciarCajeroLink(codigo) {
+  try {
+    const doc = await db.collection('carnearLinks').doc(codigo).get();
+    if (!doc.exists) { toast('Link inválido o expirado'); return; }
+    const d = doc.data();
+    currentSucursal = { id: d.sucursalId, nombre: d.nomSucursal || 'Sucursal' };
+    userRole = 'cajero';
+    currentUser = firebase.auth().currentUser;
+    initApp();
+  } catch(e) { logError('iniciarCajeroLink', e.message); }
+}
+
+// Cargar config multi-sucursal al iniciar
+async function cargarConfigSucursales() {
+  const uid = getUserDoc();
+  if (!uid) return;
+  try {
+    const negDoc = await db.collection('negocios').doc(uid).get();
+    if (negDoc.exists) {
+      const d = negDoc.data();
+      limiteSucursales = d.limiteSucursales || 1;
+      if (d.features) features = Object.assign(features, d.features);
+    }
+    const sucSnap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+    sucursales = sucSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (limiteSucursales > 1 && sucursales.length > 1) {
+      mostrarDashboard();
+    } else {
+      // Modo mono → usar sucursal principal (ruta plana, backward compatible)
+      currentSucursal = { id: 'principal', nombre: 'Principal' };
+      initApp();
+    }
+  } catch(e) {
+    logError('cargarConfigSucursales', e.message);
+    currentSucursal = { id: 'principal', nombre: 'Principal' };
+    initApp();
+  }
+}
+
+// Dashboard multi-sucursal
+const _dashUnsubs = [];
+function mostrarDashboard() {
+  _dashUnsubs.forEach(u => u && u());
+  _dashUnsubs.length = 0;
+
+  const grid = document.getElementById('sucursalesCards');
+  grid.innerHTML = '';
+  const totales = {};
+  const hoy = new Date().toISOString().split('T')[0];
+  let activas = sucursales.filter(s => s.activa !== false).length;
+  document.getElementById('dashSucActivas').textContent = activas;
+  document.getElementById('dashNombre').textContent =
+    currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Propietario';
+
+  sucursales.forEach(suc => {
+    totales[suc.id] = 0;
+    const card = document.createElement('div');
+    card.className = 'suc-card';
+    card.innerHTML = `<div class="suc-card-nom">🏪 ${suc.nombre}</div>
+      <div class="suc-card-lbl">Ventas hoy</div>
+      <div class="suc-card-val" id="svhoy-${suc.id}">$0</div>
+      <span class="badge-activa">${suc.activa !== false ? '● Activa' : '● Inactiva'}</span>`;
+    card.onclick = () => entrarEnSucursal(suc);
+    grid.appendChild(card);
+
+    const uid = getUserDoc();
+    const u = db.collection('negocios').doc(uid).collection('sucursales').doc(suc.id)
+      .collection('ventas').where('fechaDia', '==', hoy)
+      .onSnapshot(snap => {
+        let t = 0; snap.forEach(d => t += d.data().total || 0);
+        totales[suc.id] = t;
+        const el = document.getElementById('svhoy-' + suc.id);
+        if (el) el.textContent = '$' + t.toLocaleString('es-AR');
+        const globalTotal = Object.values(totales).reduce((a, b) => a + b, 0);
+        const elT = document.getElementById('dashTotalGlobal');
+        if (elT) elT.textContent = '$' + globalTotal.toLocaleString('es-AR');
+      }, e => logError('dashListener', e));
+    _dashUnsubs.push(u);
+  });
+
+  // Botón agregar sucursal si hay cupo
+  if (sucursales.length < limiteSucursales) {
+    const btn = document.createElement('button');
+    btn.innerHTML = '➕<br><span style="font-size:11px">Nueva</span>';
+    btn.style.cssText = 'background:var(--surface);border:2px dashed var(--borde);border-radius:var(--radius);padding:14px;cursor:pointer;font-size:22px;';
+    btn.onclick = () => abrirModalSucursal();
+    grid.appendChild(btn);
+  }
+
+  // Botones del dashboard
+  const dc = document.getElementById('dashConfigBtn');
+  if (dc) dc.onclick = () => { pinCallback = (p) => { if(p===PIN_ADMIN){showFeaturesPanel();return true;}return false; }; openPin('PIN RavenTechs'); };
+  const dt = document.getElementById('dashThemeBtn');
+  if (dt) dt.onclick = toggleTheme;
+  const dl = document.getElementById('dashLogoutBtn');
+  if (dl) dl.onclick = () => auth.signOut();
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-dashboard').classList.add('active');
+  document.querySelector('.tabs')?.classList.add('hidden');
+  document.getElementById('mobNav')?.classList.add('hidden');
+}
+
+function entrarEnSucursal(suc) {
+  _dashUnsubs.forEach(u => u && u());
+  _dashUnsubs.length = 0;
+  currentSucursal = suc;
+  document.querySelector('.tabs')?.classList.remove('hidden');
+  document.getElementById('mobNav')?.classList.remove('hidden');
+  // Agregar botón volver al dashboard en topbar
+  const topLeft = document.querySelector('.topbar-left');
+  if (topLeft && limiteSucursales > 1 && sucursales.length > 1) {
+    const existeBtn = document.getElementById('btnVolverDash');
+    if (!existeBtn) {
+      const btn = document.createElement('button');
+      btn.id = 'btnVolverDash';
+      btn.textContent = '← ';
+      btn.style.cssText = 'background:none;border:none;padding:4px;font-size:16px;color:var(--accent);font-weight:700;';
+      btn.onclick = () => { currentSucursal = null; mostrarDashboard(); };
+      topLeft.insertBefore(btn, topLeft.firstChild);
+    }
+  }
+  // Actualizar título del topbar
+  const titleEl = document.querySelector('.topbar-title');
+  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ${suc.nombre}</span>`;
+  initApp();
+}
+
+// Limite de sucursales
+async function setLimiteSucursales(valor) {
+  const n = parseInt(valor) || 1;
+  limiteSucursales = n;
+  const uid = getUserDoc();
+  if (!uid) return;
+  try {
+    await db.collection('negocios').doc(uid).set({ limiteSucursales: n }, { merge: true });
+    toast('Límite: ' + n + ' sucursal' + (n > 1 ? 'es' : ''));
+  } catch(e) { logError('setLimiteSucursales', e.message); }
+}
+
+// Mostrar sucursales en features panel
+async function cargarAdminSucursales() {
+  const uid = getUserDoc();
+  if (!uid) return;
+  const lista = document.getElementById('adminSucList');
+  if (!lista) return;
+  try {
+    const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+    sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!snap.docs.length) {
+      lista.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0">Sin sucursales adicionales configuradas</p>';
+      return;
+    }
+    lista.innerHTML = snap.docs.map(d => {
+      const s = { id: d.id, ...d.data() };
+      const link = location.origin + location.pathname + '?s=' + s.cod;
+      return `<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;">🏪 ${s.nombre}</div>
+        <div style="font-size:10px;color:var(--text2);font-family:monospace;margin:3px 0">Código cajero: ${s.cod}</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">WA</button>
+          <button onclick="copiarLink('${link}')" style="font-size:11px;padding:5px 10px;border-radius:6px">📋 Copiar</button>
+          <button onclick="eliminarSucursal('${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:6px;color:var(--rojo);border-color:var(--rojo)">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { logError('cargarAdminSucursales', e.message); }
+}
+
+function enviarLinkWA(nombre, url) {
+  const txt = '🥩 *CarneAR* — Acceso cajero: ' + nombre + '\n' + url;
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
+function copiarLink(url) {
+  navigator.clipboard?.writeText(url).then(() => toast('Link copiado ✓')).catch(() => toast('Copiá manualmente: ' + url));
+}
+
+function abrirModalSucursal() {
+  const uid = getUserDoc();
+  if (!uid) return;
+  if (sucursales.length >= limiteSucursales) {
+    toast('Límite de ' + limiteSucursales + ' sucursal' + (limiteSucursales > 1 ? 'es' : '') + ' alcanzado');
+    return;
+  }
+  // Usar el mismo sistema de PIN modal
+  const area = document.getElementById('featuresPanelArea');
+  const div = document.createElement('div');
+  div.className = 'features-panel';
+  div.style.marginTop = '12px';
+  div.innerHTML = `<h4 style="margin-bottom:10px">🏪 Nueva sucursal</h4>
+    <label>Nombre de la sucursal</label>
+    <input type="text" id="nuevaSucNombre" placeholder="Ej: Centro, Norte, Belgrano...">
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="this.closest('.features-panel').remove()" style="flex:1">Cancelar</button>
+      <button onclick="guardarNuevaSucursal()" class="btn-save" style="flex:2">Guardar</button>
+    </div>`;
+  area.appendChild(div);
+  document.getElementById('nuevaSucNombre')?.focus();
+}
+
+function genCodigo6() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r = '';
+  for (let i = 0; i < 6; i++) r += chars[Math.floor(Math.random() * chars.length)];
+  return r;
+}
+
+async function guardarNuevaSucursal() {
+  const uid = getUserDoc();
+  const nombre = document.getElementById('nuevaSucNombre')?.value.trim();
+  if (!nombre) { toast('Ingresá un nombre'); return; }
+  try {
+    const cod = genCodigo6();
+    const ref = await db.collection('negocios').doc(uid).collection('sucursales').add({
+      nombre, activa: true, cod,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('carnearLinks').doc(cod).set({
+      uid, sucursalId: ref.id, nomSucursal: nombre
+    });
+    toast('Sucursal creada ✓');
+    document.querySelector('#featuresPanelArea .features-panel:last-child')?.remove();
+    cargarAdminSucursales();
+  } catch(e) { logError('guardarSucursal', e.message); toast('Error: ' + e.message); }
+}
+
+async function eliminarSucursal(id) {
+  if (!confirm('¿Eliminar esta sucursal?')) return;
+  const uid = getUserDoc();
+  try {
+    const doc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
+    const cod = doc.data()?.cod;
+    await db.collection('negocios').doc(uid).collection('sucursales').doc(id).delete();
+    if (cod) await db.collection('carnearLinks').doc(cod).delete();
+    toast('Sucursal eliminada');
+    cargarAdminSucursales();
+  } catch(e) { logError('eliminarSucursal', e.message); }
+}
+
+
   // SERVICE WORKER — P3 ROBUSTEZ
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/carneAr/sw-carnear.js')
@@ -2074,7 +2398,7 @@ db.collection('negocios').doc(getUserDoc && getUserDoc() ? getUserDoc() : 'tmp')
 function cargarWhatsapp() {
   var uid = getUserDoc();
   if (!uid) return;
-  db.collection('negocios').doc(uid).collection('config').doc('general').get().then(function(doc) {
+  col('config').doc('general').get().then(function(doc) {
     if (doc.exists && doc.data().whatsapp) {
       whatsappNumero = doc.data().whatsapp;
       var el = document.getElementById('cfgWhatsapp');
@@ -2091,7 +2415,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!num || num.length < 10) { toast('Número inválido. Formato: 5491112345678'); return; }
       var uid = getUserDoc();
       if (!uid) { toast('Iniciá sesión primero'); return; }
-      db.collection('negocios').doc(uid).collection('config').doc('general').set({ whatsapp: num }, { merge: true }).then(function() {
+      col('config').doc('general').set({ whatsapp: num }, { merge: true }).then(function() {
         whatsappNumero = num;
         toast('Número guardado ✓');
       });
@@ -2109,7 +2433,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var ventas = [];
 
       if (estaOnline) {
-        var snap = await db.collection('negocios').doc(uid).collection('ventas')
+        var snap = await col('ventas')
           .where('fechaDia', '==', hoy).get().catch(function(e) { logError('cierre', e.message); return { docs: [] }; });
         ventas = snap.docs.map(function(d) { return d.data(); });
       } else {
@@ -2193,7 +2517,7 @@ document.addEventListener('DOMContentLoaded', function() {
         totalGeneral: parseFloat(modal.dataset.totalGeneral) || 0
       };
       if (estaOnline && uid) {
-        await db.collection('negocios').doc(uid).collection('cierres')
+        await col('cierres')
           .add(Object.assign({}, cierreData, { ts: firebase.firestore.FieldValue.serverTimestamp() }))
           .catch(function(e) { logError('guardar-cierre', e.message); });
       }
@@ -2271,7 +2595,7 @@ function sincronizarPendientes() {
       var data = {};
       for (var k in v) { if (k !== 'localId') data[k] = v[k]; }
       data.fecha = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection('negocios').doc(uid).collection('ventas').add(data)
+      col('ventas').add(data)
         .then(function() { return idbDelete('ventas_pendientes', localId); })
         .then(siguiente)
         .catch(function(e) { logError('sync', e.message); });
@@ -2303,10 +2627,10 @@ async function generarBackup(silencioso) {
   var uid = getUserDoc ? getUserDoc() : null;
   if (!uid) return;
   try {
-    var ventasSnap = await db.collection('negocios').doc(uid).collection('ventas').get().catch(function(){return {docs:[]};});
+    var ventasSnap = await col('ventas').get().catch(function(){return {docs:[]};});
     var productosSnap = await db.collection('productos').get().catch(function(){return {docs:[]};});
     var stockSnap = await db.collection('stock').get().catch(function(){return {docs:[]};});
-    var cierresSnap = await db.collection('negocios').doc(uid).collection('cierres').get().catch(function(){return {docs:[]};});
+    var cierresSnap = await col('cierres').get().catch(function(){return {docs:[]};});
     var configSnap = await db.collection('configuracion').doc('general').get().catch(function(){return {exists:false};});
     var fecha = new Date().toISOString().slice(0,10);
     var backup = {
@@ -2339,10 +2663,10 @@ async function restaurarBackup(input) {
     if (backup.app !== 'CarneAR') { toast('El archivo no es un backup de CarneAR'); return; }
     toast('Restaurando datos...');
     var batch = db.batch(); var count = 0;
-    (backup.ventas||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(db.collection('negocios').doc(uid).collection('ventas').doc(id),d);if(++count%400===0){batch.commit();batch=db.batch();}});
+    (backup.ventas||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(col('ventas').doc(id),d);if(++count%400===0){batch.commit();batch=db.batch();}});
     (backup.productos||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(db.collection('productos').doc(id),d);});
     (backup.stock||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(db.collection('stock').doc(id),d);});
-    (backup.cierres||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(db.collection('negocios').doc(uid).collection('cierres').doc(id),d);});
+    (backup.cierres||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(col('cierres').doc(id),d);});
     if(backup.configuracion&&Object.keys(backup.configuracion).length>0){batch.set(db.collection('configuracion').doc('general'),backup.configuracion,{merge:true});}
     await batch.commit();
     toast('✅ Backup restaurado'); input.value='';
@@ -2514,7 +2838,7 @@ window.cargarItemsTicket = async function() {
     }));
     const total = ticketItemsData.reduce((s, i) => s + (i.subtotal || 0), 0);
 
-    await db.collection('negocios').doc(uid).collection('ventas').add({
+    await col('ventas').add({
       items,
       total,
       metodo:     'efectivo',
