@@ -609,6 +609,17 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
       <h3>Cuenta</h3>
       <button class="btn-danger" id="configLogoutBtn">🚪 Cerrar sesión</button>
     </div>
+    <!-- SUCURSALES — visible al dueño cuando limiteSucursales > 1 -->
+    <div class="config-group hidden" id="sucursalesConfigGroup">
+      <h3>🏪 Mis sucursales</h3>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px;">
+        Gestioná tus sucursales y compartí el acceso a cada cajero.
+      </p>
+      <div id="sucursalesConfigList"></div>
+      <button id="btnNuevaSucConfig" class="btn-save" style="width:100%;margin-top:8px;">+ Nueva sucursal</button>
+      <p id="sucLimiteInfo" style="font-size:0.75rem;color:var(--text2);margin-top:6px;text-align:center;"></p>
+    </div>
+
     <div id="featuresPanelArea" class="hidden"></div>
   </div>
 </div>
@@ -1112,6 +1123,7 @@ function switchTab(id) {
   if(id==='inicio') loadDashboard();
   if(id==='gastos') loadGastos('hoy');
   if(id==='proveedores') renderProveedores();
+  if(id==='config') renderSucursalesConfig();
 }
 
 // ══════════ DATA SUBSCRIPTIONS ══════════
@@ -2060,11 +2072,7 @@ function showFeaturesPanel() {
           <input type="number" id="inputLimSuc" min="1" max="99" value="${limiteSucursales}" style="width:48px;padding:5px 8px;text-align:center;font-size:13px;" onchange="setLimiteSucursales(this.value)">
         </div>
       </div>
-      <div style="margin-top:12px;border-top:1px solid var(--borde);padding-top:12px;">
-        <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">🏪 Gestión de sucursales</h4>
-        <div id="adminSucList"></div>
-        <button onclick="abrirModalSucursal()" style="width:100%;margin-top:8px;background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;">+ Nueva sucursal</button>
-      </div>
+
       <div class="feature-toggle">
         <span>📱 Pedidos online</span>
         <span class="text-sm">Próximamente</span>
@@ -2077,8 +2085,6 @@ function showFeaturesPanel() {
   `;
   switchTab('config');
   toast('Panel RavenTechs activado');
-  // Cargar sucursales en el panel
-  setTimeout(() => { cargarAdminSucursales(); }, 100);
   // Actualizar input de limite
   const limEl = document.getElementById('inputLimSuc');
   if (limEl) limEl.value = limiteSucursales;
@@ -2270,6 +2276,121 @@ function entrarEnSucursal(suc) {
   const titleEl = document.querySelector('.topbar-title');
   if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ${suc.nombre}</span>`;
   initApp();
+}
+
+// ════════════════════════════════════════════════════
+// SUCURSALES en Config tab (visible al dueño)
+// ════════════════════════════════════════════════════
+async function renderSucursalesConfig() {
+  const grupo = document.getElementById('sucursalesConfigGroup');
+  if (!grupo) return;
+
+  // Solo visible si limiteSucursales > 1
+  if (limiteSucursales <= 1) {
+    grupo.classList.add('hidden');
+    return;
+  }
+  grupo.classList.remove('hidden');
+
+  const uid = getUserDoc();
+  if (!uid) return;
+
+  // Info de límite
+  const infoEl = document.getElementById('sucLimiteInfo');
+  const btnNueva = document.getElementById('btnNuevaSucConfig');
+
+  try {
+    const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+    sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const cantActual = sucursales.length;
+
+    if (infoEl) infoEl.textContent = cantActual + ' de ' + limiteSucursales + ' sucursal' + (limiteSucursales > 1 ? 'es' : '') + ' habilitadas';
+    if (btnNueva) {
+      btnNueva.style.display = cantActual >= limiteSucursales ? 'none' : '';
+      btnNueva.onclick = () => abrirModalSucursalConfig();
+    }
+
+    const lista = document.getElementById('sucursalesConfigList');
+    if (!lista) return;
+
+    if (!sucursales.length) {
+      lista.innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:12px 0">Aún no tenés sucursales. Agregá la primera.</p>';
+      return;
+    }
+
+    lista.innerHTML = sucursales.map(s => {
+      const link = location.origin + location.pathname + '?s=' + s.cod;
+      return `<div class="config-group" style="margin-bottom:10px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <strong style="font-size:14px;">🏪 ${s.nombre}</strong>
+            <div style="font-size:11px;color:var(--text2);font-family:monospace;margin-top:2px">Código cajero: ${s.cod}</div>
+          </div>
+          <button onclick="eliminarSucursalConfig('${s.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--rojo);padding:4px">🗑️</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
+          <button onclick="copiarLink('${link}')" style="background:var(--surface);border:2px solid var(--borde);border-radius:8px;padding:9px;font-size:13px;cursor:pointer;">📋</button>
+        </div>
+      </div>`;
+    }).join('');
+
+  } catch(e) { logError('renderSucursalesConfig', e.message); }
+}
+
+function abrirModalSucursalConfig() {
+  // Reutiliza el modal de proveedor para pedir nombre
+  document.getElementById('provNombre').value = '';
+  // Crear un mini-formulario inline en vez de abrir el modal de prov
+  const lista = document.getElementById('sucursalesConfigList');
+  const existe = document.getElementById('inlineNuevaSuc');
+  if (existe) { existe.remove(); return; }
+  const div = document.createElement('div');
+  div.id = 'inlineNuevaSuc';
+  div.className = 'config-group';
+  div.style.cssText = 'margin-bottom:10px;padding:12px;border-color:var(--accent)';
+  div.innerHTML = `<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nueva sucursal</label>
+    <input type="text" id="inlineNuevaSucNom" placeholder="Ej: Centro, Norte, Belgrano..." style="margin-bottom:8px">
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('inlineNuevaSuc').remove()" style="flex:1">Cancelar</button>
+      <button onclick="guardarNuevaSucursalConfig()" class="btn-save" style="flex:2">Guardar</button>
+    </div>`;
+  lista.insertBefore(div, lista.firstChild);
+  document.getElementById('inlineNuevaSucNom').focus();
+}
+
+async function guardarNuevaSucursalConfig() {
+  const uid = getUserDoc();
+  const nombre = document.getElementById('inlineNuevaSucNom')?.value.trim();
+  if (!nombre) { toast('Ingresá un nombre'); return; }
+  if (sucursales.length >= limiteSucursales) {
+    toast('Límite de ' + limiteSucursales + ' sucursales alcanzado'); return;
+  }
+  try {
+    const cod = genCodigo6();
+    const ref = await db.collection('negocios').doc(uid).collection('sucursales').add({
+      nombre, activa: true, cod,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('carnearLinks').doc(cod).set({ uid, sucursalId: ref.id, nomSucursal: nombre });
+    toast('✅ Sucursal "' + nombre + '" creada');
+    document.getElementById('inlineNuevaSuc')?.remove();
+    renderSucursalesConfig();
+  } catch(e) { logError('guardarNuevaSucursalConfig', e.message); toast('Error: ' + e.message); }
+}
+
+async function eliminarSucursalConfig(id) {
+  if (!confirm('¿Eliminar esta sucursal? Se perderá el acceso del cajero.')) return;
+  if (sucursales.length <= 1) { toast('Necesitás al menos una sucursal'); return; }
+  const uid = getUserDoc();
+  try {
+    const doc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
+    const cod = doc.data()?.cod;
+    await db.collection('negocios').doc(uid).collection('sucursales').doc(id).delete();
+    if (cod) await db.collection('carnearLinks').doc(cod).delete();
+    toast('Sucursal eliminada');
+    renderSucursalesConfig();
+  } catch(e) { logError('eliminarSucursalConfig', e.message); }
 }
 
 // Limite de sucursales
