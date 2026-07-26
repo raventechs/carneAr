@@ -934,13 +934,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if(isDark) document.body.classList.add('dark');
   updateThemeBtn();
 
+  // Capturar resultado de redirect Google (si viene de signInWithRedirect)
+  auth.getRedirectResult().catch(() => {});
+
   setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
     auth.onAuthStateChanged(user => {
       if(user && !user.isAnonymous) {
         currentUser = user;
         userRole = 'dueno';
-        cargarConfigSucursales(); // carga sucursales → decide si dashboard o directo
+        // Entra al app de inmediato (igual que v1.3), luego verifica sucursales
+        currentSucursal = { id: 'principal', nombre: 'Principal' };
+        initApp();
+        setTimeout(() => verificarMultiSucursal(), 600);
       } else if(user && user.isAnonymous && !_codigoLink) {
         currentUser = user;
         userRole = 'cajero';
@@ -1052,7 +1058,8 @@ function showError(msg) { document.getElementById('loginError').textContent = ms
 
 async function loginGoogle() {
   try {
-    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    // signInWithRedirect evita el error COOP de GitHub Pages
+    await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
   } catch(e) { showError(e.message); }
 }
 
