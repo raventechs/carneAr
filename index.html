@@ -476,10 +476,53 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 
   <!-- CAJA -->
   <div class="section" id="sec-caja">
-    <div id="offlineBadgeBox" style="display:none;background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin-bottom:8px;">⏳ Ventas pendientes de sincronizar: <strong id="offlineBadgeCount">0</strong></div>
-    <div class="grupos-bar" id="gruposBar"></div>
-    <div class="pos-grid" id="posGrid"></div>
-    <div class="cart" id="cartArea">
+    <div id="offlineBadgeBox" style="display:none;background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin:8px 12px 0;">⏳ Ventas pendientes de sincronizar: <strong id="offlineBadgeCount">0</strong></div>
+
+    <!-- MODE BAR -->
+    <div class="caja-mode-bar" id="cajaModeBar">
+      <button class="caja-mode-btn active" onclick="setCajaMode('catalogo')">🥩 Catálogo</button>
+      <button class="caja-mode-btn" onclick="setCajaMode('importe')">💰 Importe</button>
+      <button class="caja-mode-btn" id="modeTicketBtn" onclick="setCajaMode('ticket')" style="display:none">📸 Ticket</button>
+      <button class="caja-mode-btn" onclick="setCajaMode('codigo')" style="display:none" id="modeCodigoBtn">📊 Código</button>
+    </div>
+
+    <!-- MODO CATÁLOGO -->
+    <div class="caja-mode-content active" id="modeCatalogo">
+      <div class="grupos-bar" id="gruposBar"></div>
+      <div class="pos-grid" id="posGrid"></div>
+    </div>
+
+    <!-- MODO IMPORTE LIBRE -->
+    <div class="caja-mode-content" id="modeImporte">
+      <div class="importe-form">
+        <p style="font-size:0.8rem;color:var(--text2);margin-bottom:12px;">Ingresá el monto y cobrá directamente sin seleccionar productos.</p>
+        <input type="number" id="vrMonto" class="importe-monto-input" placeholder="$ 0" min="0">
+        <input type="text" id="vrDesc" placeholder="Descripción (opcional)" style="margin-bottom:12px;">
+        <select id="vrMetodo" style="margin-bottom:12px;">
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="transferencia">📲 Transferencia</option>
+          <option value="tarjeta">💳 Tarjeta</option>
+          <option value="mercadopago">🔵 MercadoPago</option>
+        </select>
+        <button onclick="registrarVentaRapida()" style="width:100%;background:var(--verde,#27ae60);color:#fff;border:none;border-radius:var(--radius);padding:15px;font-weight:700;font-size:1rem;cursor:pointer;">✅ Cobrar</button>
+      </div>
+    </div>
+
+    <!-- MODO TICKET (foto) -->
+    <div class="caja-mode-content" id="modeTicket">
+      <div style="text-align:center;padding:8px 0 16px;">
+        <p style="font-size:0.82rem;color:var(--text2);margin-bottom:14px;line-height:1.6">Sacale una foto al ticket de balanza y la IA carga los items al carrito.</p>
+        <input type="file" id="inputTicket" accept="image/*" capture="environment" style="display:none" onchange="leerTicket(this)">
+        <button class="btn-ticket-camara" onclick="document.getElementById('inputTicket').click()" style="width:100%;">📷 Sacar foto del ticket</button>
+        <img id="ticketPreview" class="ticket-preview" alt="Preview ticket" style="margin-top:12px;">
+        <div id="ticketLoading" class="ticket-loading" style="display:none;">🤖 Analizando ticket...</div>
+        <div id="ticketItems" class="ticket-items"></div>
+        <button class="btn-cargar-ticket" id="btnCargarTicket" onclick="cargarItemsTicket()" style="width:100%;margin-top:8px;">✅ Cargar venta con estos items</button>
+      </div>
+    </div>
+
+    <!-- CARRITO (siempre visible) -->
+    <div class="cart" id="cartArea" style="margin:0 12px;">
       <h3>🛒 Carrito <span id="cartCount">(0)</span></h3>
       <div id="cartList"></div>
       <div class="cart-total">Total: $<span id="cartTotal">0</span></div>
@@ -488,25 +531,9 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
         <button class="btn-cobrar" id="cartCobrarBtn">Cobrar</button>
       </div>
     </div>
-    <!-- VENTA RÁPIDA POR IMPORTE -->
-    <div style="margin-top:12px;background:var(--surface);border:2px solid var(--verde,#27ae60);border-radius:var(--radius);padding:14px;" id="ventaRapidaBox">
-      <h3 style="font-size:0.9rem;color:var(--verde,#27ae60);margin-bottom:10px;">💰 Venta rápida por importe</h3>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="text" id="vrDesc" placeholder="Descripción (opcional)" style="flex:2;font-size:0.85rem;">
-        <input type="number" id="vrMonto" placeholder="$0" min="0" style="flex:1;font-size:0.9rem;font-weight:700;">
-      </div>
-      <div style="display:flex;gap:8px;">
-        <select id="vrMetodo" style="flex:1;font-size:0.85rem;">
-          <option value="efectivo">💵 Efectivo</option>
-          <option value="transferencia">📲 Transferencia</option>
-          <option value="tarjeta">💳 Tarjeta</option>
-          <option value="mercadopago">🔵 MercadoPago</option>
-        </select>
-        <button onclick="registrarVentaRapida()" style="flex:1;background:var(--verde,#27ae60);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:700;font-size:0.9rem;cursor:pointer;">✅ Cobrar</button>
-      </div>
-    </div>
 
-    <div style="margin-top:12px;background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:14px;">
+    <!-- CIERRE DE CAJA -->
+    <div style="margin:12px;background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:14px;">
       <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔒 Cierre de caja</h3>
       <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa.</p>
       <button id="cierreBtn" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:13px;font-weight:700;font-size:0.95rem;cursor:pointer;">Cerrar caja y enviar resumen</button>
@@ -943,7 +970,7 @@ function getTabsForRole() {
       {id:'stock',icon:'📦',label:'Stock'}
     ];
     if(features.gastos) t.push({id:'gastos',icon:'💸',label:'Gastos'});
-    if(features.ticket) t.push({id:'ticket',icon:'📸',label:'Ticket'});
+    // ticket integrado en Caja
     return t;
   }
   const tabs = [
@@ -954,7 +981,7 @@ function getTabsForRole() {
     {id:'stock',icon:'📦',label:'Stock'}
   ];
   if(features.gastos) tabs.push({id:'gastos',icon:'💸',label:'Gastos'});
-    if(features.ticket) tabs.push({id:'ticket',icon:'📸',label:'Ticket'});
+    // ticket integrado en Caja - no se muestra como tab separado
   if(features.proveedores) tabs.push({id:'proveedores',icon:'🏭',label:'Proveed.'});
   tabs.push({id:'config',icon:'⚙️',label:'Config'});
   return tabs;
@@ -1256,6 +1283,28 @@ function subscribeData() {
     }, err => console.error('Proveedores error:',err));
 }
 
+
+
+// ── Caja: selector de modo ────────────────────────────────────
+function setCajaMode(mode) {
+  document.querySelectorAll('.caja-mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.caja-mode-content').forEach(d => d.classList.remove('active'));
+  const modeEl = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+  if(modeEl) modeEl.classList.add('active');
+  // Marcar el botón activo
+  const btns = document.querySelectorAll('#cajaModeBar .caja-mode-btn');
+  const modeIdx = {catalogo:0, importe:1, ticket:2, codigo:3};
+  const visibleBtns = Array.from(btns).filter(b => b.style.display !== 'none');
+  const modeMap = ['catalogo','importe','ticket','codigo'];
+  visibleBtns.forEach(b => {
+    if(b.getAttribute('onclick')?.includes(mode)) b.classList.add('active');
+  });
+}
+
+function actualizarBotonesModoCaja() {
+  const btnTicket = document.getElementById('modeTicketBtn');
+  if(btnTicket) btnTicket.style.display = features.ticket ? '' : 'none';
+}
 
 // ── Venta rápida por importe (sin productos) ──────────────────
 async function registrarVentaRapida() {
