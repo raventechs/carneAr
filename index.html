@@ -2452,11 +2452,14 @@ async function renderSucursalesConfig() {
       const link = location.origin + location.pathname + '?s=' + s.cod;
       return `<div class="config-group" style="margin-bottom:10px;padding:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
+          <div id="suc-nombre-${s.id}">
             <strong style="font-size:14px;">🏪 ${s.nombre}</strong>
             <div style="font-size:11px;color:var(--text2);font-family:monospace;margin-top:2px">Código cajero: ${s.cod}</div>
           </div>
-          <button onclick="eliminarSucursalConfig('${s.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--rojo);padding:4px">🗑️</button>
+          <div style="display:flex;gap:4px;">
+            <button onclick="editarNombreSuc('${s.id}','${s.nombre}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px" title="Editar nombre">✏️</button>
+            <button onclick="eliminarSucursalConfig('${s.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--rojo);padding:4px" title="Eliminar">🗑️</button>
+          </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
@@ -2466,6 +2469,45 @@ async function renderSucursalesConfig() {
     }).join('');
 
   } catch(e) { logError('renderSucursalesConfig', e.message); }
+}
+
+
+// ── Editar nombre de sucursal ─────────────────────────────────
+function editarNombreSuc(id, nombreActual) {
+  const contenedor = document.getElementById('suc-nombre-' + id);
+  if (!contenedor) return;
+  contenedor.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input type="text" id="edit-suc-${id}" value="${nombreActual}"
+        style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:6px;border:2px solid var(--accent);width:140px;">
+      <button onclick="guardarNombreSuc('${id}')"
+        style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">✓</button>
+      <button onclick="renderSucursalesConfig()"
+        style="background:var(--surface);border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;">✕</button>
+    </div>`;
+  document.getElementById('edit-suc-' + id)?.focus();
+}
+
+async function guardarNombreSuc(id) {
+  const uid = getUserDoc();
+  const nuevoNombre = document.getElementById('edit-suc-' + id)?.value.trim();
+  if (!nuevoNombre) { showToast('Ingresá un nombre'); return; }
+  try {
+    await db.collection('negocios').doc(uid).collection('sucursales').doc(id).update({ nombre: nuevoNombre });
+    // Actualizar también en carnearLinks para que el link cajero muestre el nombre correcto
+    const sucDoc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
+    const cod = sucDoc.data()?.cod;
+    if (cod) await db.collection('carnearLinks').doc(cod).update({ nomSucursal: nuevoNombre });
+    showToast('✓ Nombre actualizado');
+    renderSucursalesConfig();
+    // Refrescar dashboard si está visible
+    if (document.getElementById('sec-dashboard')?.classList.contains('active')) {
+      verificarMultiSucursal();
+    }
+  } catch(e) {
+    logError('guardarNombreSuc', e.message);
+    showToast('Error: ' + e.message);
+  }
 }
 
 function abrirModalSucursalConfig() {
