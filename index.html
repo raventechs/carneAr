@@ -1287,17 +1287,17 @@ function subscribeData() {
 
 // ── Caja: selector de modo ────────────────────────────────────
 function setCajaMode(mode) {
-  document.querySelectorAll('.caja-mode-btn').forEach(b => b.classList.remove('active'));
+  // Ocultar todos los contenidos
   document.querySelectorAll('.caja-mode-content').forEach(d => d.classList.remove('active'));
-  const modeEl = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
-  if(modeEl) modeEl.classList.add('active');
-  // Marcar el botón activo
-  const btns = document.querySelectorAll('#cajaModeBar .caja-mode-btn');
-  const modeIdx = {catalogo:0, importe:1, ticket:2, codigo:3};
-  const visibleBtns = Array.from(btns).filter(b => b.style.display !== 'none');
-  const modeMap = ['catalogo','importe','ticket','codigo'];
-  visibleBtns.forEach(b => {
-    if(b.getAttribute('onclick')?.includes(mode)) b.classList.add('active');
+  // Desactivar todos los botones
+  document.querySelectorAll('.caja-mode-btn').forEach(b => b.classList.remove('active'));
+  // Mostrar el modo seleccionado
+  const ids = {catalogo:'modeCatalogo', importe:'modeImporte', ticket:'modeTicket', codigo:'modeCodigo'};
+  const el = document.getElementById(ids[mode]);
+  if(el) el.classList.add('active');
+  // Activar el botón correspondiente
+  document.querySelectorAll('#cajaModeBar .caja-mode-btn').forEach(b => {
+    if(b.getAttribute('onclick')?.includes("'" + mode + "'")) b.classList.add('active');
   });
 }
 
