@@ -2095,7 +2095,8 @@ function showFeaturesPanel() {
       </div>
     </div>
   `;
-  switchTab('config');
+  // NO abrimos Config — mostramos el panel sobre la pantalla actual
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
   toast('Panel RavenTechs activado');
   // Actualizar input de limite
   const limEl = document.getElementById('inputLimSuc');
@@ -2173,6 +2174,41 @@ async function iniciarCajeroLink(codigo) {
     initApp();
   } catch(e) { logError('iniciarCajeroLink', e.message); }
 }
+
+
+// ── verificarMultiSucursal ──────────────────────────────────────
+// Se llama 600ms después de initApp(). Si hay multi-sucursal activo,
+// redirige al dashboard. Si no, queda en modo normal sin tocar nada.
+async function verificarMultiSucursal() {
+  const uid = getUserDoc();
+  if (!uid) return;
+  try {
+    const negDoc = await db.collection('negocios').doc(uid).get();
+    if (negDoc.exists) {
+      const d = negDoc.data();
+      limiteSucursales = d.limiteSucursales || 1;
+      if (d.features) {
+        features = Object.assign(features, d.features);
+        // Refrescar tabs con features actualizadas
+        const tabs = getTabsForRole();
+        renderTabs(tabs);
+      }
+    }
+    // Mostrar dashboard si hay múltiples sucursales habilitadas
+    if (limiteSucursales > 1) {
+      const sucSnap = await db.collection('negocios').doc(uid)
+        .collection('sucursales').orderBy('nombre').get();
+      sucursales = sucSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (sucursales.length > 1) {
+        mostrarDashboard();
+      }
+    }
+  } catch(e) {
+    // Falla silenciosa — app ya visible en modo principal
+    console.log('verificarMultiSucursal error (no crítico):', e.message);
+  }
+}
+// ────────────────────────────────────────────────────────────────
 
 // Cargar config multi-sucursal al iniciar
 async function cargarConfigSucursales() {
