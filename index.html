@@ -2360,27 +2360,25 @@ function entrarEnSucursal(suc) {
     if (!btnBack) {
       btnBack = document.createElement('button');
       btnBack.id = 'btnVolverDash';
-      btnBack.textContent = '←';
+      btnBack.innerHTML = '←';
       btnBack.style.cssText = 'background:none;border:none;padding:4px 8px;font-size:18px;color:var(--accent);font-weight:700;cursor:pointer;';
       btnBack.onclick = () => { currentSucursal = null; mostrarDashboard(); };
       topLeft.insertBefore(btnBack, topLeft.firstChild);
     }
   }
 
-  // Título con sucursal
+  // Título con nombre de sucursal
   const titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ${suc.nombre}</span>`;
+  if (titleEl) titleEl.innerHTML = 'Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ' + suc.nombre + '</span>';
 
-  // Renderizar TODOS los tabs del dueño (Caja, Menú, Reportes, Historial, Stock, Gastos, Ticket, Prov., Config)
+  // Mostrar TODOS los tabs del dueño
   userRole = 'dueno';
-  const tabs = getTabsForRole();
-  renderTabs(tabs);
+  renderTabs(getTabsForRole());
 
-  // Suscribir datos de esta sucursal e ir a Caja
+  // Cargar datos de la sucursal e ir directamente a Caja
   subscribeData();
   switchTab('caja');
 }
-
 // ════════════════════════════════════════════════════
 // SUCURSALES en Config tab (visible al dueño)
 // ════════════════════════════════════════════════════
