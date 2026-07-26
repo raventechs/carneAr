@@ -1,59 +1,34 @@
-// sw-carnear.js — Service Worker CarnéAR v1.5
-// P3 ROBUSTEZ: cachea shell para uso offline completo
-
-const CACHE_NAME = 'carnear-v1.5';
+// sw-carnear.js — CarnéAR v2.0
+const CACHE = 'carnear-v2.0';
 const SHELL = [
-  '/carneAr/',
-  '/carneAr/index.html',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-  'https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js',
+  '/carneAr/', '/carneAr/index.html',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@700;800&display=swap',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js',
 ];
-
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
   self.skipWaiting();
 });
-
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
-  );
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
   self.clients.claim();
 });
-
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
-  if (
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.hostname.includes('identitytoolkit.googleapis.com') ||
-    url.hostname.includes('securetoken.googleapis.com')
-  ) return;
-
+  if (url.hostname.includes('firestore.googleapis.com') || 
+      url.hostname.includes('identitytoolkit.googleapis.com') ||
+      url.hostname.includes('securetoken.googleapis.com')) return;
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (
-          response && response.status === 200 &&
-          (url.origin === self.location.origin ||
-           url.hostname.includes('googleapis.com') ||
-           url.hostname.includes('gstatic.com'))
-        ) {
-          // Clonar ANTES de retornar — el body solo se puede leer una vez
-          const clon = response.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clon));
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200 && (url.origin === self.location.origin || url.hostname.includes('gstatic.com') || url.hostname.includes('googleapis.com'))) {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
-        return response;
-      }).catch(() => {
-        if (e.request.mode === 'navigate') {
-          return caches.match('/carneAr/index.html');
-        }
-      });
+        return res;
+      }).catch(() => { if (e.request.mode === 'navigate') return caches.match('/carneAr/index.html'); });
     })
   );
 });
