@@ -488,6 +488,24 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
         <button class="btn-cobrar" id="cartCobrarBtn">Cobrar</button>
       </div>
     </div>
+    <!-- VENTA RÁPIDA POR IMPORTE -->
+    <div style="margin-top:12px;background:var(--surface);border:2px solid var(--verde,#27ae60);border-radius:var(--radius);padding:14px;" id="ventaRapidaBox">
+      <h3 style="font-size:0.9rem;color:var(--verde,#27ae60);margin-bottom:10px;">💰 Venta rápida por importe</h3>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="vrDesc" placeholder="Descripción (opcional)" style="flex:2;font-size:0.85rem;">
+        <input type="number" id="vrMonto" placeholder="$0" min="0" style="flex:1;font-size:0.9rem;font-weight:700;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select id="vrMetodo" style="flex:1;font-size:0.85rem;">
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="transferencia">📲 Transferencia</option>
+          <option value="tarjeta">💳 Tarjeta</option>
+          <option value="mercadopago">🔵 MercadoPago</option>
+        </select>
+        <button onclick="registrarVentaRapida()" style="flex:1;background:var(--verde,#27ae60);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:700;font-size:0.9rem;cursor:pointer;">✅ Cobrar</button>
+      </div>
+    </div>
+
     <div style="margin-top:12px;background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:14px;">
       <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔒 Cierre de caja</h3>
       <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa.</p>
@@ -1180,12 +1198,24 @@ function subscribeData() {
     }
   }, err => console.error('Features error:', err));
 
-  unsubProductos = col('productos')
-    .orderBy('nombre').onSnapshot(snap => {
-      productos = snap.docs.map(d => ({id:d.id,...d.data()}));
-      renderPOS();
-      renderMenu();
-    }, err => console.error('Productos error:',err));
+  // Productos: si la sucursal está vacía, usa el catálogo del principal
+  const cargarProductosSucursal = () => {
+    if (unsubProductos) unsubProductos();
+    unsubProductos = col('productos').orderBy('nombre').onSnapshot(snap => {
+      if (snap.empty && currentSucursal && currentSucursal.id !== 'principal') {
+        // Fallback: catálogo compartido del principal
+        db.collection('negocios').doc(uid).collection('productos').orderBy('nombre').get()
+          .then(s2 => {
+            productos = s2.docs.map(d => ({id:d.id,...d.data()}));
+            renderPOS(); renderMenu();
+          }).catch(() => { productos = []; renderPOS(); renderMenu(); });
+      } else {
+        productos = snap.docs.map(d => ({id:d.id,...d.data()}));
+        renderPOS(); renderMenu();
+      }
+    }, err => console.error('Productos error:', err));
+  };
+  cargarProductosSucursal();
 
   unsubInsumos = col('insumos')
     .orderBy('nombre').onSnapshot(snap => {
@@ -1203,6 +1233,38 @@ function subscribeData() {
       proveedores = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderProveedores();
     }, err => console.error('Proveedores error:',err));
+}
+
+
+// ── Venta rápida por importe (sin productos) ──────────────────
+async function registrarVentaRapida() {
+  const desc = document.getElementById('vrDesc')?.value.trim() || 'Venta directa';
+  const monto = parseFloat(document.getElementById('vrMonto')?.value) || 0;
+  const metodo = document.getElementById('vrMetodo')?.value || 'efectivo';
+  if (monto <= 0) { showToast('Ingresá un monto mayor a $0'); return; }
+  const uid = getUserDoc();
+  if (!uid) return;
+  const ahora = new Date();
+  const venta = {
+    items: [{ nombre: desc, cantidad: 1, precioUnitario: monto, subtotal: monto }],
+    total: monto,
+    metodoPago: metodo,
+    fecha: ahora.toISOString().split('T')[0],
+    hora: ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+    ventaRapida: true,
+    sucursalId: currentSucursal?.id || 'principal',
+    ts: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    await col('ventas').add(venta);
+    showToast('✅ Venta registrada: $' + monto.toLocaleString('es-AR'));
+    document.getElementById('vrMonto').value = '';
+    document.getElementById('vrDesc').value = '';
+    loadDashboardData();
+  } catch(e) {
+    logError('ventaRapida', e.message);
+    showToast('Error: ' + e.message);
+  }
 }
 
 // ══════════ POS (CAJA) ══════════
