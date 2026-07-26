@@ -521,7 +521,7 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
   </div>
 
   <!-- REPORTES -->
-  <div class="section" id="sec-reportes">
+  <div class="section" id="sec-reportes" style="display:none!important">
     <h2>📊 Reportes del día</h2>
     <div id="reportCards"></div>
   </div>
@@ -950,7 +950,6 @@ function getTabsForRole() {
     {id:'inicio',icon:'🏠',label:'Inicio'},
     {id:'caja',icon:'🥩',label:'Caja'},
     {id:'menu',icon:'📋',label:'Menú'},
-    {id:'reportes',icon:'📊',label:'Reportes'},
     {id:'historial',icon:'📜',label:'Historial'},
     {id:'stock',icon:'📦',label:'Stock'}
   ];
@@ -1169,7 +1168,6 @@ function switchTab(id) {
   const sec = document.getElementById('sec-'+id);
   if(sec) sec.classList.add('active');
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-  if(id==='reportes') loadReportes();
   if(id==='historial') loadHistorial('hoy');
   if(id==='inicio') loadDashboard();
   if(id==='gastos') loadGastos('hoy');
