@@ -909,7 +909,7 @@ let userRole = 'dueno'; // dueno | cajero
 // ── MULTI-SUCURSAL ──
 let currentSucursal = null;   // null = principal (datos en raíz, backward compatible)
 let sucursales = [];
-let limiteSucursales = 1;
+let limiteSucursales = parseInt(localStorage.getItem('carnear_ls')) || 1;
 let ownerUid = null; // UID del dueño — lo usa el cajero para escribir en la ruta correcta
 let productos = [];
 let insumos = [];
@@ -1187,6 +1187,7 @@ function subscribeData() {
     }
     const prevLimite = limiteSucursales;
     limiteSucursales = datos.limiteSucursales || 1;
+    localStorage.setItem('carnear_ls', limiteSucursales);
     if (limiteSucursales !== prevLimite && limiteSucursales > 1) {
       const enConfig = document.getElementById('sec-config')?.classList.contains('active');
       if (enConfig) renderSucursalesConfig();
@@ -2258,6 +2259,7 @@ async function verificarMultiSucursal() {
     if (limiteSucursales > 1) {
       const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
       sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      try { localStorage.setItem('carnear_suc', JSON.stringify(sucursales.map(s=>({id:s.id,nom:s.nom||s.nombre,activa:s.activa,cod:s.cod})))); } catch(_) {}
       if (sucursales.length > 1) mostrarDashboard();
     }
   } catch(e) { console.log('verificarMultiSucursal:', e.message); }
