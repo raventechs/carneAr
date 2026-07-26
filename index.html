@@ -970,13 +970,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loading').style.display = 'none';
     auth.onAuthStateChanged(user => {
       if(user && !user.isAnonymous) {
+        // Guard: si ya está corriendo con el mismo usuario (token refresh), ignorar
+        if(appRunning && currentUser && currentUser.uid === user.uid) return;
+        appRunning = true;
         currentUser = user;
         userRole = 'dueno';
-        // Entra al app de inmediato (igual que v1.3), luego verifica sucursales
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-        setTimeout(() => verificarMultiSucursal(), 600);
-      } else if(user && user.isAnonymous && !_codigoLink) {
+        const delay = limiteSucursales > 1 ? 0 : 800;
+        setTimeout(() => verificarMultiSucursal(), delay);
+            } else if(user && user.isAnonymous && !_codigoLink) {
         currentUser = user;
         userRole = 'cajero';
         currentSucursal = { id: 'principal', nombre: 'Principal' };
