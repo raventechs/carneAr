@@ -905,7 +905,8 @@ const INSUMOS_BASICOS = [
 
 // ══════════ STATE ══════════
 let currentUser = null;
-let userRole = 'dueno'; // dueno | cajero
+let userRole = 'dueno';
+let appRunning = false; // evita reiniciar al refrescar token de auth // dueno | cajero
 // ── MULTI-SUCURSAL ──
 let currentSucursal = null;   // null = principal (datos en raíz, backward compatible)
 let sucursales = [];
@@ -983,6 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if(user && user.isAnonymous && _codigoLink) {
         // El código link maneja el resto en iniciarCajeroLink
       } else {
+        appRunning = false;
         showLogin();
       }
     });
@@ -998,8 +1000,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('themeBtn').onclick = toggleTheme;
 
   // Logout
-  document.getElementById('logoutBtn').onclick = () => auth.signOut();
-  document.getElementById('configLogoutBtn').onclick = () => auth.signOut();
+  document.getElementById('logoutBtn').onclick = () => { appRunning = false; auth.signOut(); };
+  document.getElementById('configLogoutBtn').onclick = () => { appRunning = false; auth.signOut(); };
 
   // Cart
   document.getElementById('cartClearBtn').onclick = () => { carrito=[]; renderCart(); };
