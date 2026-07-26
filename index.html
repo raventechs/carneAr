@@ -338,7 +338,17 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 }
 /* ──────────────────────────────────────────────────── */
 
-</style>
+
+    /* Caja mode bar */
+    .caja-mode-bar{display:flex;gap:6px;padding:10px 12px;background:var(--surface);border-bottom:2px solid var(--borde);overflow-x:auto;}
+    .caja-mode-btn{flex-shrink:0;padding:8px 16px;border-radius:20px;border:2px solid var(--borde);background:var(--surface);color:var(--text2);font-size:0.85rem;font-weight:600;cursor:pointer;}
+    .caja-mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .caja-mode-content{display:none;padding:12px;}
+    .caja-mode-content.active{display:block;}
+    .importe-monto-input{font-size:2rem;font-weight:700;text-align:center;border:2px solid var(--borde);border-radius:var(--radius);padding:12px;width:100%;margin-bottom:12px;color:var(--accent);}
+    .importe-monto-input:focus{border-color:var(--accent);outline:none;}
+
+  </style>
 </head>
 <body>
 <div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
@@ -3557,7 +3567,17 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 }
 /* ──────────────────────────────────────────────────── */
 
-</style>
+
+    /* Caja mode bar */
+    .caja-mode-bar{display:flex;gap:6px;padding:10px 12px;background:var(--surface);border-bottom:2px solid var(--borde);overflow-x:auto;}
+    .caja-mode-btn{flex-shrink:0;padding:8px 16px;border-radius:20px;border:2px solid var(--borde);background:var(--surface);color:var(--text2);font-size:0.85rem;font-weight:600;cursor:pointer;}
+    .caja-mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .caja-mode-content{display:none;padding:12px;}
+    .caja-mode-content.active{display:block;}
+    .importe-monto-input{font-size:2rem;font-weight:700;text-align:center;border:2px solid var(--borde);border-radius:var(--radius);padding:12px;width:100%;margin-bottom:12px;color:var(--accent);}
+    .importe-monto-input:focus{border-color:var(--accent);outline:none;}
+
+  </style>
 </head>
 <body>
 <div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
