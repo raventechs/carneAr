@@ -934,11 +934,17 @@ let isDark = localStorage.getItem('carnear-dark') === '1';
 
 // ══════════ TABS CONFIG ══════════
 function getTabsForRole() {
-  if(userRole === 'cajero') return [
-    {id:'caja',icon:'🥩',label:'Caja'},
-    {id:'menu',icon:'📋',label:'Menú'},
-    {id:'stock',icon:'📦',label:'Stock'}
-  ];
+  if(userRole === 'cajero') {
+    const t = [
+      {id:'caja',icon:'🥩',label:'Caja'},
+      {id:'menu',icon:'📋',label:'Menú'},
+      {id:'historial',icon:'📜',label:'Historial'},
+      {id:'stock',icon:'📦',label:'Stock'}
+    ];
+    if(features.gastos) t.push({id:'gastos',icon:'💸',label:'Gastos'});
+    if(features.ticket) t.push({id:'ticket',icon:'📸',label:'Ticket'});
+    return t;
+  }
   const tabs = [
     {id:'inicio',icon:'🏠',label:'Inicio'},
     {id:'caja',icon:'🥩',label:'Caja'},
