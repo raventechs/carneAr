@@ -934,26 +934,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if(isDark) document.body.classList.add('dark');
   updateThemeBtn();
 
-  // Capturar resultado de redirect Google (si viene de signInWithRedirect)
-  auth.getRedirectResult().catch(() => {});
-
   setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
     auth.onAuthStateChanged(user => {
-      if(user && !user.isAnonymous) {
+      if (user && !user.isAnonymous) {
         currentUser = user;
         userRole = 'dueno';
-        // Entra al app de inmediato (igual que v1.3), luego verifica sucursales
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-        setTimeout(() => verificarMultiSucursal(), 600);
-      } else if(user && user.isAnonymous && !_codigoLink) {
+        setTimeout(() => verificarMultiSucursal(), 800);
+      } else if (user && user.isAnonymous && !_codigoLink) {
         currentUser = user;
         userRole = 'cajero';
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-      } else if(user && user.isAnonymous && _codigoLink) {
-        // El código link maneja el resto en iniciarCajeroLink
+      } else if (user && user.isAnonymous && _codigoLink) {
+        // cajero por link — iniciarCajeroLink lo maneja
       } else {
         showLogin();
       }
@@ -1058,8 +1054,7 @@ function showError(msg) { document.getElementById('loginError').textContent = ms
 
 async function loginGoogle() {
   try {
-    // signInWithRedirect evita el error COOP de GitHub Pages
-    await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
   } catch(e) { showError(e.message); }
 }
 
@@ -2095,8 +2090,7 @@ function showFeaturesPanel() {
       </div>
     </div>
   `;
-  // NO abrimos Config — mostramos el panel sobre la pantalla actual
-  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  switchTab('config');
   toast('Panel RavenTechs activado');
   // Actualizar input de limite
   const limEl = document.getElementById('inputLimSuc');
@@ -2176,9 +2170,7 @@ async function iniciarCajeroLink(codigo) {
 }
 
 
-// ── verificarMultiSucursal ──────────────────────────────────────
-// Se llama 600ms después de initApp(). Si hay multi-sucursal activo,
-// redirige al dashboard. Si no, queda en modo normal sin tocar nada.
+// ── verificarMultiSucursal ─────────────────────────────────────
 async function verificarMultiSucursal() {
   const uid = getUserDoc();
   if (!uid) return;
@@ -2189,26 +2181,20 @@ async function verificarMultiSucursal() {
       limiteSucursales = d.limiteSucursales || 1;
       if (d.features) {
         features = Object.assign(features, d.features);
-        // Refrescar tabs con features actualizadas
-        const tabs = getTabsForRole();
-        renderTabs(tabs);
+        renderTabs(getTabsForRole());
       }
     }
-    // Mostrar dashboard si hay múltiples sucursales habilitadas
     if (limiteSucursales > 1) {
-      const sucSnap = await db.collection('negocios').doc(uid)
+      const snap = await db.collection('negocios').doc(uid)
         .collection('sucursales').orderBy('nombre').get();
-      sucursales = sucSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (sucursales.length > 1) {
-        mostrarDashboard();
-      }
+      sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (sucursales.length > 1) mostrarDashboard();
     }
   } catch(e) {
-    // Falla silenciosa — app ya visible en modo principal
-    console.log('verificarMultiSucursal error (no crítico):', e.message);
+    console.log('verificarMultiSucursal (no crítico):', e.message);
   }
 }
-// ────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
 
 // Cargar config multi-sucursal al iniciar
 async function cargarConfigSucursales() {
