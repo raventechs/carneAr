@@ -1124,7 +1124,18 @@ function initApp() {
 
   const tabs = getTabsForRole();
   renderTabs(tabs);
-  switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
+
+  // Si hay multi-sucursal activo, mostrar sec-dashboard de inmediato
+  // y dejar que verificarMultiSucursal() llene las cards desde Firestore
+  if(userRole === 'dueno' && limiteSucursales > 1) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    const secDash = document.getElementById('sec-dashboard');
+    if(secDash) secDash.classList.add('active');
+    verificarMultiSucursal();
+  } else {
+    switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
+  }
+
   subscribeData();
   initOffline();
   cargarWhatsapp();
@@ -2315,6 +2326,7 @@ function mostrarDashboard() {
   _dashUnsubs.length = 0;
 
   const grid = document.getElementById('sucursalesCards');
+  if(!grid) return;
   grid.innerHTML = '';
   const totales = {};
   const hoy = new Date().toISOString().split('T')[0];
