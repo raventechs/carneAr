@@ -885,6 +885,7 @@ let userRole = 'dueno'; // dueno | cajero
 let currentSucursal = null;   // null = principal (datos en raíz, backward compatible)
 let sucursales = [];
 let limiteSucursales = 1;
+let ownerUid = null; // UID del dueño — lo usa el cajero para escribir en la ruta correcta
 let productos = [];
 let insumos = [];
 let gastos = [];
@@ -1127,7 +1128,11 @@ function switchTab(id) {
 }
 
 // ══════════ DATA SUBSCRIPTIONS ══════════
-function getUserDoc() { return currentUser ? currentUser.uid : null; }
+function getUserDoc() {
+  // Cajero: usa el UID del dueño (guardado al leer carnearLinks)
+  if (ownerUid) return ownerUid;
+  return currentUser ? currentUser.uid : null;
+}
 
 function subscribeData() {
   const uid = getUserDoc();
@@ -2154,6 +2159,7 @@ async function iniciarCajeroLink(codigo) {
     const doc = await db.collection('carnearLinks').doc(codigo).get();
     if (!doc.exists) { toast('Link inválido o expirado'); return; }
     const d = doc.data();
+    ownerUid = d.uid; // UID del dueño → cajero escribe bajo este UID
     currentSucursal = { id: d.sucursalId, nombre: d.nomSucursal || 'Sucursal' };
     userRole = 'cajero';
     currentUser = firebase.auth().currentUser;
