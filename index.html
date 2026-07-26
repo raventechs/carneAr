@@ -2284,15 +2284,12 @@ function mostrarDashboard() {
   }
 
   // Botones del dashboard
-  const dc = document.getElementById('dashConfigBtn');
-  if (dc) dc.onclick = () => { pinCallback = (p) => { if(p===PIN_ADMIN){showFeaturesPanel();return true;}return false; }; openPin('PIN RavenTechs'); };
-  const dt = document.getElementById('dashThemeBtn');
-  if (dt) dt.onclick = toggleTheme;
-  const dl = document.getElementById('dashLogoutBtn');
-  if (dl) dl.onclick = () => auth.signOut();
+  // Botones del dashboard manejados desde topbar
 
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-dashboard').classList.add('active');
+  document.querySelector('.tabs')?.classList.add('hidden');
+  document.getElementById('mobNav')?.classList.add('hidden');
 }
 
 function entrarEnSucursal(suc) {
