@@ -1075,25 +1075,25 @@ function subscribeData() {
     }
   }, err => console.error('Features error:', err));
 
-  unsubProductos = db.collection('negocios').doc(uid).collection('productos')
+  unsubProductos = col('productos')
     .orderBy('nombre').onSnapshot(snap => {
       productos = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderPOS();
       renderMenu();
     }, err => console.error('Productos error:',err));
 
-  unsubInsumos = db.collection('negocios').doc(uid).collection('insumos')
+  unsubInsumos = col('insumos')
     .orderBy('nombre').onSnapshot(snap => {
       insumos = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderStock();
     }, err => console.error('Insumos error:',err));
 
-  unsubGastos = db.collection('negocios').doc(uid).collection('gastos')
+  unsubGastos = col('gastos')
     .orderBy('fecha','desc').onSnapshot(snap => {
       gastos = snap.docs.map(d => ({id:d.id,...d.data()}));
     }, err => console.error('Gastos error:',err));
 
-  unsubProveedores = db.collection('negocios').doc(uid).collection('proveedores')
+  unsubProveedores = col('proveedores')
     .orderBy('nombre').onSnapshot(snap => {
       proveedores = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderProveedores();
@@ -1216,7 +1216,7 @@ async function confirmarVenta() {
 
   try {
     // Save sale
-    await db.collection('negocios').doc(uid).collection('ventas').add({
+    await col('ventas').add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
       fechaLocal: new Date().toISOString()
@@ -1230,7 +1230,7 @@ async function confirmarVenta() {
           const insumo = insumos.find(ins=>ins.id===ing.insumoId);
           if(insumo) {
             const newCant = Math.max(0, (insumo.cantidad||0) - (ing.cantidad * item.cantidad));
-            await db.collection('negocios').doc(uid).collection('insumos').doc(insumo.id).update({cantidad:newCant});
+            await col('insumos').doc(insumo.id).update({cantidad:newCant});
           }
         }
       }
@@ -1375,9 +1375,9 @@ async function guardarProducto() {
 
   try {
     if(editingProductId) {
-      await db.collection('negocios').doc(uid).collection('productos').doc(editingProductId).update(data);
+      await col('productos').doc(editingProductId).update(data);
     } else {
-      await db.collection('negocios').doc(uid).collection('productos').add(data);
+      await col('productos').add(data);
     }
     document.getElementById('modalProducto').classList.remove('show');
     toast(editingProductId ? 'Producto actualizado' : 'Producto creado');
@@ -1388,7 +1388,7 @@ async function deleteProduct(id) {
   if(!confirm('¿Eliminar este producto?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('productos').doc(id).delete();
+    await col('productos').doc(id).delete();
     toast('Producto eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -1424,7 +1424,7 @@ async function adjustStock(id, direction) {
   if(!ins) return;
   const newCant = Math.max(0, (ins.cantidad||0) + (amount * direction));
   try {
-    await db.collection('negocios').doc(uid).collection('insumos').doc(id).update({cantidad:newCant});
+    await col('insumos').doc(id).update({cantidad:newCant});
   } catch(e) { toast('Error: '+e.message); }
 }
 
@@ -1449,9 +1449,9 @@ async function guardarInsumo() {
 
   try {
     if(editingStockId) {
-      await db.collection('negocios').doc(uid).collection('insumos').doc(editingStockId).update({nombre,unidad,cantidad,umbral});
+      await col('insumos').doc(editingStockId).update({nombre,unidad,cantidad,umbral});
     } else {
-      await db.collection('negocios').doc(uid).collection('insumos').add({nombre,unidad,cantidad,umbral});
+      await col('insumos').add({nombre,unidad,cantidad,umbral});
     }
     document.getElementById('modalStock').classList.remove('show');
     editingStockId = null;
@@ -1463,7 +1463,7 @@ async function deleteInsumo(id) {
   if(!confirm('¿Eliminar este insumo?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('insumos').doc(id).delete();
+    await col('insumos').doc(id).delete();
     toast('Insumo eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -1477,7 +1477,7 @@ async function cargarInsumosBasicos() {
       // Avoid duplicates by name
       const existing = insumos.find(i => i.nombre.toLowerCase() === ins.nombre.toLowerCase());
       if(!existing) {
-        await db.collection('negocios').doc(uid).collection('insumos').add(ins);
+        await col('insumos').add(ins);
         count++;
       }
     }
@@ -1506,7 +1506,7 @@ async function loadDashboard() {
 
   try {
     // Traer ventas del mes (incluye semana y hoy)
-    const snap = await db.collection('negocios').doc(uid).collection('ventas')
+    const snap = await col('ventas')
       .where('fecha','>=',mesStart).get();
 
     let hoyTotal=0, hoyCount=0, semTotal=0, semCount=0, mesTotal=0, mesCount=0;
@@ -1535,7 +1535,7 @@ async function loadDashboard() {
   if(features.gastos) {
     try {
       const mesStart2 = new Date(now.getFullYear(), now.getMonth(), 1);
-      const gSnap = await db.collection('negocios').doc(uid).collection('gastos')
+      const gSnap = await col('gastos')
         .where('fecha','>=',mesStart2).get();
       let gastosMes = 0;
       gSnap.forEach(doc => { gastosMes += doc.data().monto || 0; });
@@ -1577,7 +1577,7 @@ async function loadReportes() {
   today.setHours(0,0,0,0);
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('ventas')
+    const snap = await col('ventas')
       .where('fecha','>=',today).get();
     let totalVentas = 0, totalIngresos = 0, efectivo = 0, transferencia = 0;
     snap.forEach(doc => {
@@ -1619,7 +1619,7 @@ async function loadHistorial(filter) {
   }
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('ventas')
+    const snap = await col('ventas')
       .where('fecha','>=',desde).where('fecha','<=',hasta)
       .orderBy('fecha','desc').get();
 
@@ -1664,14 +1664,14 @@ async function restablecerCatalogo() {
 
   try {
     // Delete all current products
-    const snap = await db.collection('negocios').doc(uid).collection('productos').get();
+    const snap = await col('productos').get();
     const batch1 = db.batch();
     snap.forEach(doc => batch1.delete(doc.ref));
     await batch1.commit();
 
     // Add example catalog
     for(const p of CATALOGO_EJEMPLO) {
-      await db.collection('negocios').doc(uid).collection('productos').add({
+      await col('productos').add({
         nombre: p.nombre,
         categoria: p.categoria,
         tamanos: p.tamanos,
@@ -1685,7 +1685,7 @@ async function restablecerCatalogo() {
 async function limpiarDuplicados() {
   const uid = getUserDoc();
   if(!uid) return;
-  const snap = await db.collection('negocios').doc(uid).collection('productos').get();
+  const snap = await col('productos').get();
   const seen = {};
   let removed = 0;
   const batch = db.batch();
@@ -1750,9 +1750,9 @@ async function guardarGasto() {
 
   try {
     if(editingGastoId) {
-      await db.collection('negocios').doc(uid).collection('gastos').doc(editingGastoId).update(data);
+      await col('gastos').doc(editingGastoId).update(data);
     } else {
-      await db.collection('negocios').doc(uid).collection('gastos').add(data);
+      await col('gastos').add(data);
     }
     document.getElementById('modalGasto').classList.remove('show');
     editingGastoId = null;
@@ -1765,7 +1765,7 @@ async function deleteGasto(id) {
   if(!confirm('¿Eliminar este gasto?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('gastos').doc(id).delete();
+    await col('gastos').doc(id).delete();
     toast('Gasto eliminado');
     loadGastos(document.querySelector('#gastosFilters .active').dataset.gf);
   } catch(e) { toast('Error: '+e.message); }
@@ -1787,7 +1787,7 @@ async function loadGastos(filter) {
   }
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('gastos')
+    const snap = await col('gastos')
       .where('fecha','>=',desde).orderBy('fecha','desc').get();
 
     let totalGastos = 0;
@@ -1854,9 +1854,9 @@ async function guardarProveedor() {
 
   try {
     if(editingProvId) {
-      await db.collection('negocios').doc(uid).collection('proveedores').doc(editingProvId).update(data);
+      await col('proveedores').doc(editingProvId).update(data);
     } else {
-      await db.collection('negocios').doc(uid).collection('proveedores').add(data);
+      await col('proveedores').add(data);
     }
     document.getElementById('modalProv').classList.remove('show');
     editingProvId = null;
@@ -1868,7 +1868,7 @@ async function deleteProveedor(id) {
   if(!confirm('¿Eliminar este proveedor?')) return;
   const uid = getUserDoc();
   try {
-    await db.collection('negocios').doc(uid).collection('proveedores').doc(id).delete();
+    await col('proveedores').doc(id).delete();
     toast('Proveedor eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
