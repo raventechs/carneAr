@@ -1993,7 +1993,7 @@ async function deleteGasto(id) {
   } catch(e) { toast('Error: '+e.message); }
 }
 
-async async function loadGastos(filter) {
+async function loadGastos(filter) {
   const uid = getUserDoc();
   if(!uid) return;
   const now = new Date();
