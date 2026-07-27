@@ -998,7 +998,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
       } else if(user && user.isAnonymous && _codigoLink) {
-        // El código link maneja el resto en iniciarCajeroLink
+        // Cajero accede por link de WhatsApp
+        iniciarCajeroLink(_codigoLink);
       } else {
         showLogin();
       }
@@ -2270,10 +2271,13 @@ function toast(msg) {
 // Detectar acceso de cajero por link WhatsApp (?s=CODIGO)
 const _urlParams = new URLSearchParams(location.search);
 const _codigoLink = _urlParams.get('s');
+// Iniciar auth anónima para cajero por link — el onAuthStateChanged maneja el resto
 if (_codigoLink && !firebase.auth().currentUser) {
-  firebase.auth().signInAnonymously().then(() => {
-    iniciarCajeroLink(_codigoLink);
-  }).catch(e => logError('cajeroLink', e.message));
+  firebase.auth().signInAnonymously().catch(e => {
+    logError('cajeroLink', e.message);
+    document.getElementById('loading').style.display = 'none';
+    showLogin();
+  });
 }
 
 async function iniciarCajeroLink(codigo) {
@@ -2286,7 +2290,13 @@ async function iniciarCajeroLink(codigo) {
     userRole = 'cajero';
     currentUser = firebase.auth().currentUser;
     initApp();
-  } catch(e) { logError('iniciarCajeroLink', e.message); }
+  } catch(e) {
+    logError('iniciarCajeroLink', e.message);
+    // Mostrar login si algo falla — evita pantalla en blanco
+    document.getElementById('loading').style.display = 'none';
+    showLogin();
+    toast('Error al acceder: ' + e.message);
+  }
 }
 
 
