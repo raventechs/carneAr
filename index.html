@@ -1287,25 +1287,33 @@ async function confirmarVenta() {
   const items = carrito.map(c => ({nombre:c.nombre, tamano:c.tamanoNombre, precio:c.precio, cantidad:c.cantidad}));
 
   try {
-    // Save sale
+    const ahora = new Date();
+    // Guardar venta con fechaDia (string) + ts (timestamp) para historial
     await col('ventas').add({
       items, total, metodo,
-      fecha: firebase.firestore.FieldValue.serverTimestamp(),
-      fechaLocal: new Date().toISOString()
+      fechaDia: ahora.toISOString().slice(0,10),
+      fecha: firebase.firestore.Timestamp.fromDate(ahora),
+      fechaLocal: ahora.toISOString(),
+      ts: firebase.firestore.FieldValue.serverTimestamp(),
+      uid: getUserDoc()
     });
 
-    // Decrement stock (per-size recipes)
-    for(const item of carrito) {
-      const prod = productos.find(p=>p.id===item.productoId);
-      if(prod && prod.recetaPorTamano && prod.recetaPorTamano[item.tamanoNombre]) {
-        for(const ing of prod.recetaPorTamano[item.tamanoNombre]) {
-          const insumo = insumos.find(ins=>ins.id===ing.insumoId);
-          if(insumo) {
-            const newCant = Math.max(0, (insumo.cantidad||0) - (ing.cantidad * item.cantidad));
-            await col('insumos').doc(insumo.id).update({cantidad:newCant});
+    // Descontar stock en try-catch separado (no bloquea si falla permisos)
+    try {
+      for(const item of carrito) {
+        const prod = productos.find(p=>p.id===item.productoId);
+        if(prod && prod.recetaPorTamano && prod.recetaPorTamano[item.tamanoNombre]) {
+          for(const ing of prod.recetaPorTamano[item.tamanoNombre]) {
+            const insumo = insumos.find(ins=>ins.id===ing.insumoId);
+            if(insumo) {
+              const newCant = Math.max(0, (insumo.cantidad||0) - (ing.cantidad * item.cantidad));
+              await col('insumos').doc(insumo.id).update({cantidad: newCant});
+            }
           }
         }
       }
+    } catch(stockErr) {
+      console.log('Stock decrement skip (sin permisos o sin receta):', stockErr.message);
     }
 
     carrito = [];
