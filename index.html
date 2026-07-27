@@ -1992,32 +1992,41 @@ async function deleteGasto(id) {
   } catch(e) { toast('Error: '+e.message); }
 }
 
-async function loadGastos(filter) {
+async async function loadGastos(filter) {
   const uid = getUserDoc();
   if(!uid) return;
   const now = new Date();
-  let desde = new Date();
 
-  if(filter === 'hoy') { desde.setHours(0,0,0,0); }
-  else if(filter === 'semana') {
-    const day = desde.getDay();
-    desde.setDate(desde.getDate() - (day===0?6:day-1));
-    desde.setHours(0,0,0,0);
+  // Calcular rango de fechas como strings (yyyy-mm-dd) para compatibilidad
+  let desdeStr, hastaStr = now.toISOString().slice(0,10);
+  if(filter === 'hoy') {
+    desdeStr = hastaStr;
+  } else if(filter === 'semana') {
+    const d2 = new Date(); d2.setDate(d2.getDate()-6);
+    desdeStr = d2.toISOString().slice(0,10);
   } else {
-    desde = new Date(now.getFullYear(), now.getMonth(), 1);
+    desdeStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
   }
 
   try {
-    const snap = await col('gastos')
-      .where('fecha','>=',desde).orderBy('fecha','desc').get();
-
-    let totalGastos = 0;
-    const lista = [];
+    const snap = await col('gastos').orderBy('fechaDia','desc').get();
+    const todosGastos = [];
     snap.forEach(doc => {
       const g = doc.data();
-      totalGastos += g.monto || 0;
-      lista.push({id:doc.id,...g});
+      // Aceptar fechaDia (string) o fecha (Timestamp o string)
+      let diaGasto = g.fechaDia;
+      if(!diaGasto && g.fecha) {
+        diaGasto = typeof g.fecha === 'string' ? g.fecha.slice(0,10)
+                 : (g.fecha.toDate ? g.fecha.toDate().toISOString().slice(0,10) : null);
+      }
+      if(diaGasto && diaGasto >= desdeStr && diaGasto <= hastaStr) {
+        todosGastos.push({id:doc.id, ...g, _diaGasto: diaGasto});
+      }
     });
+    const lista = todosGastos;
+    const snap2 = {forEach: () => {}}; // ya procesamos arriba
+
+    let totalGastos = lista.reduce((s,g) => s + (g.monto||0), 0);
 
     document.getElementById('gastosSummary').innerHTML = `
       <div style="background:rgba(192,57,43,.08);border:2px solid var(--rojo);border-radius:var(--radius);padding:14px;margin-bottom:14px;text-align:center;">
@@ -2029,7 +2038,7 @@ async function loadGastos(filter) {
     if(!lista.length) { list.innerHTML='<div class="empty-state"><p>Sin gastos en este período</p></div>'; return; }
 
     list.innerHTML = lista.map(g => {
-      const fecha = g.fecha ? g.fecha.toDate().toLocaleString('es-AR') : '';
+      const fecha = g._diaGasto || g.fechaDia || (g.fecha && g.fecha.toDate ? g.fecha.toDate().toLocaleDateString('es-AR') : g.fecha) || '';
       return `<div class="venta-card">
         <div class="venta-card-head">
           <span>${fecha}</span>
