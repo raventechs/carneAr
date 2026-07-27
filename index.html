@@ -1220,11 +1220,11 @@ function subscribeData() {
     if (limiteSucursales !== prevLimite && limiteSucursales > 1) {
       const enConfig = document.getElementById('sec-config')?.classList.contains('active');
       if (enConfig) renderSucursalesConfig();
-      db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get()
+      db.collection('negocios').doc(uid).collection('sucursales').get()
         .then(snap => {
           sucursales = snap.docs.map(s => ({ id: s.id, ...s.data() }));
           if (sucursales.length > 1) mostrarDashboard();
-        }).catch(() => {});
+        }).catch(e => console.log('sucursales get error:', e.message, e.code));
     }
   }, err => console.error('Features error:', err));
 
@@ -2301,11 +2301,15 @@ async function verificarMultiSucursal() {
       if (d.features) { features = Object.assign(features, d.features); renderTabs(getTabsForRole()); }
     }
     if (limiteSucursales > 1) {
-      const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+      const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
       sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       if (sucursales.length > 1) mostrarDashboard();
     }
-  } catch(e) { console.log('verificarMultiSucursal:', e.message); }
+  } catch(e) {
+    console.log('verificarMultiSucursal error:', e.message, e.code);
+    // Aunque falle la carga, mostrar dashboard si estaba previsto
+    if (limiteSucursales > 1 && sucursales.length > 1) mostrarDashboard();
+  }
 }
 
 // Cargar config multi-sucursal al iniciar
@@ -2319,7 +2323,7 @@ async function cargarConfigSucursales() {
       limiteSucursales = d.limiteSucursales || 1;
       if (d.features) features = Object.assign(features, d.features);
     }
-    const sucSnap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+    const sucSnap = await db.collection('negocios').doc(uid).collection('sucursales').get();
     sucursales = sucSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     if (limiteSucursales > 1 && sucursales.length > 1) {
@@ -2483,7 +2487,7 @@ async function renderSucursalesConfig() {
   const btnNueva = document.getElementById('btnNuevaSucConfig');
 
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+    const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
     sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const cantActual = sucursales.length;
 
@@ -2598,7 +2602,7 @@ async function cargarAdminSucursales() {
   const lista = document.getElementById('adminSucList');
   if (!lista) return;
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('sucursales').orderBy('nombre').get();
+    const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
     sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!snap.docs.length) {
       lista.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0">Sin sucursales adicionales configuradas</p>';
