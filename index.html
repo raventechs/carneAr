@@ -2353,10 +2353,16 @@ function mostrarDashboard() {
     grid.appendChild(card);
 
     const uid = getUserDoc();
+    // Listener sin filtro de fecha para capturar ventas con 'fechaDia' o 'fecha'
     const u = db.collection('negocios').doc(uid).collection('sucursales').doc(suc.id)
-      .collection('ventas').where('fechaDia', '==', hoy)
+      .collection('ventas').orderBy('fechaLocal', 'desc').limit(200)
       .onSnapshot(snap => {
-        let t = 0; snap.forEach(d => t += d.data().total || 0);
+        let t = 0;
+        snap.forEach(d => {
+          const v = d.data();
+          const diaVenta = v.fechaDia || v.fecha || (v.fechaLocal ? v.fechaLocal.slice(0,10) : null);
+          if (diaVenta === hoy) t += v.total || 0;
+        });
         totales[suc.id] = t;
         const el = document.getElementById('svhoy-' + suc.id);
         if (el) el.textContent = '$' + t.toLocaleString('es-AR');
