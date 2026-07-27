@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.0
-  Fecha de esta versión: 2026-07-25
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.5
+  Fecha de esta versión: 2026-07-26
   Cambios respecto a v1.2: Gastos y Proveedores como features
   plus (bloqueados por defecto, se activan desde panel RavenTechs
-  5 toques + PIN 1990). Gastos: CRUD completo con filtro
+  5 toques + PIN 2580). Gastos: CRUD completo con filtro
   hoy/semana/mes, monto, método de pago, proveedor opcional.
   Proveedores: CRUD con nombre, teléfono, rubro, WhatsApp.
   Dashboard muestra balance (ingresos - gastos del mes) cuando
@@ -14,15 +14,15 @@
   Roles: cajero ve Caja+Menú+Stock; dueño ve todo + tabs
   dinámicos según features activados.
   Firebase: carnear-1d2c4.
-  v2.0: Dashboard multi-sucursal, logo tomahawk, cajero por link WhatsApp por sucursal.
-  Feature flag limiteSucursales en panel RavenTechs.
+  PENDIENTE: activar Authentication, autorizar raventechs.lat,
+  publicar reglas de Firestore.
   ════════════════════════════════════════════════════════════
 -->
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CarneAR</title>
+  <title>CarnéAR</title>
   <style>
     :root {
       --bg: #fafafa; --surface: #ffffff; --text: #1a1a1a; --text2: #555;
@@ -44,9 +44,9 @@
 
     /* ══ LOADING ══ */
     #loading { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; }
-    .loader-meat { width:100px; height:100px; animation: pulso 1.2s ease-in-out infinite; }
+    .loader-meat { width:90px; height:90px; animation: spin 2s linear infinite; }
     .loader-meat svg { width:100%; height:100%; }
-    @keyframes pulso { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
+    @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
     .loader-text { margin-top:18px; font-size:22px; font-weight:700; color:var(--accent); letter-spacing:1px; }
     .loader-sub { font-size:13px; color:var(--text2); margin-top:6px; }
 
@@ -201,14 +201,6 @@
     .badge-cat { display:inline-block; background:var(--accent); color:#fff; font-size:10px; padding:2px 8px; border-radius:10px; margin-bottom:4px; }
     .empty-state { text-align:center; padding:40px 20px; color:var(--text2); }
     .empty-state p { font-size:14px; }
-    /* ══ MULTI-SUCURSAL ══ */
-    .suc-card { background:var(--surface); border:2px solid var(--borde); border-radius:var(--radius); padding:14px; cursor:pointer; transition:transform .12s; position:relative; overflow:hidden; }
-    .suc-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--accent); }
-    .suc-card:active { transform:scale(.96); }
-    .suc-card-nom { font-size:14px; font-weight:700; margin-bottom:8px; }
-    .suc-card-val { font-size:20px; font-weight:700; color:var(--verde); }
-    .suc-card-lbl { font-size:10px; color:var(--text2); margin-bottom:2px; }
-    .badge-activa { display:inline-block; background:rgba(39,174,96,.12); color:var(--verde); font-size:10px; padding:2px 8px; border-radius:10px; margin-top:6px; }
 
     /* ══ PIN MODAL ══ */
     .pin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:600; align-items:center; justify-content:center; }
@@ -239,140 +231,52 @@
       #dashCards h3 { font-size:11px; }
     }
   
-/* ══ MÓDULO TICKET (Plus) ══ */
-.ticket-scanner{text-align:center;padding:20px 0}
-.ticket-preview{width:100%;max-height:300px;object-fit:contain;border-radius:12px;border:1px solid var(--border);margin:12px 0;display:none}
-.ticket-preview.on{display:block}
-.ticket-items{margin-top:16px}
-.ticket-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.ticket-item-desc{font-weight:600;font-size:0.88rem}
-.ticket-item-detail{font-size:0.75rem;color:var(--muted);margin-top:2px}
-.ticket-item-precio{font-weight:700;color:var(--accent);font-size:0.95rem}
-.ticket-total{background:var(--accent);color:#fff;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-weight:700}
-.ticket-loading{color:var(--muted);font-size:0.84rem;padding:20px;text-align:center}
-.btn-ticket-camara{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:12px;padding:14px 24px;font-size:0.9rem;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-cargar-ticket{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:0.85rem;font-weight:700;cursor:pointer;width:100%;margin-top:8px;display:none}
-.btn-cargar-ticket.on{display:block}
+    /* ══ TABS: solo bottom nav en mobile ══ */
+    .tabs { display: none !important; }
 
+    /* ══ DASHBOARD MULTI-SUCURSAL ══ */
+    .suc-card{background:var(--surface);border:2px solid var(--borde);border-radius:var(--radius);padding:14px;cursor:pointer;transition:transform .12s;position:relative;overflow:hidden;}
+    .suc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);}
+    .suc-card:active{transform:scale(.96);}
+    .suc-card-nom{font-size:14px;font-weight:700;margin-bottom:8px;}
+    .suc-card-val{font-size:20px;font-weight:700;color:var(--verde);}
+    .suc-card-lbl{font-size:10px;color:var(--text2);margin-bottom:2px;}
+    .badge-activa{display:inline-block;background:rgba(39,174,96,.12);color:var(--verde);font-size:10px;padding:2px 8px;border-radius:10px;margin-top:6px;}
+    .suc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-/* ── PULIDO VISUAL RAVENTECHS ──────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@700;800&display=swap');
-
-body, input, button, select, textarea {
-  font-family: 'Inter', sans-serif !important;
-}
-.logo-text, .app-title, h1 {
-  font-family: 'Sora', sans-serif !important;
-}
-.producto-card, .product-card, [class*="prod-card"], [class*="item-card"] {
-  border-radius: 16px !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,.13), 0 1px 4px rgba(0,0,0,.06) !important;
-  transition: transform .15s ease, box-shadow .15s ease !important;
-  cursor: pointer;
-}
-.producto-card:active, .product-card:active,
-[class*="prod-card"]:active, [class*="item-card"]:active {
-  transform: scale(0.95) !important;
-  box-shadow: 0 1px 6px rgba(0,0,0,.06) !important;
-}
-.btn-tomate, .btn-primary, [class*="btn-rojo"], [class*="btn-cobrar"] {
-  border-radius: 14px !important;
-  background: linear-gradient(135deg, #c0392b, #e74c3c) !important;
-  box-shadow: 0 5px 18px rgba(192,57,43,.45), 0 2px 6px rgba(192,57,43,.2) !important;
-  transition: transform .12s ease, box-shadow .12s ease !important;
-  font-weight: 700 !important;
-  letter-spacing: .01em !important;
-}
-.btn-tomate:active, .btn-primary:active {
-  transform: scale(0.97) !important;
-  box-shadow: 0 1px 6px rgba(192,57,43,.25) !important;
-}
-.btn-secondary, .btn-naranja {
-  border-radius: 14px !important;
-  transition: transform .12s ease, box-shadow .12s ease !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(230,126,34,.35), 0 1px 4px rgba(230,126,34,.15) !important;
-}
-.btn-secondary:active, .btn-naranja:active {
-  transform: scale(0.97) !important;
-  box-shadow: 0 2px 6px rgba(230,126,34,.2) !important;
-}
-#cobrarBtn, [id*="cobrar"], [id*="Cobrar"] {
-  min-height: 54px !important;
-  font-size: 1rem !important;
-  border-radius: 16px !important;
-}
-#totalDisplay, [id*="total"], .total-amount {
-  font-size: 1.6rem !important;
-  font-weight: 800 !important;
-  font-family: 'Sora', sans-serif !important;
-}
-.tab-btn, [class*="tab-btn"] {
-  transition: color .2s ease !important;
-  font-weight: 500 !important;
-}
-header, .app-header, [class*="header"] {
-  box-shadow: 0 1px 8px rgba(0,0,0,.06) !important;
-}
-input, select, textarea {
-  border-radius: 10px !important;
-}
-.toast, [class*="toast"], [id*="toast"] {
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,.15) !important;
-}
-.btn-metodo, [id*="metodo"], [id*="efectivo"], [id*="debito"],
-button[class*="metodo"], button[class*="pago"] {
-  border-radius: 14px !important;
-  font-weight: 600 !important;
-  transition: transform .12s ease, box-shadow .12s ease !important;
-  box-shadow: 0 3px 10px rgba(0,0,0,.1) !important;
-}
-button[class*="metodo"]:active, button[class*="pago"]:active {
-  transform: scale(0.97) !important;
-}
-[class*="venta-actual"], [class*="total-section"], [id*="ventaActual"] {
-  border-radius: 16px !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,.07) !important;
-}
-/* ──────────────────────────────────────────────────── */
-
-    .caja-mode-bar{display:flex;gap:6px;padding:10px 12px;background:var(--surface);border-bottom:2px solid var(--borde);overflow-x:auto;}
+    /* ══ CAJA MODE BAR ══ */
+    .caja-mode-bar{display:flex;gap:6px;padding:10px 12px;background:var(--surface);border-bottom:2px solid var(--borde);overflow-x:auto;scrollbar-width:none;}
+    .caja-mode-bar::-webkit-scrollbar{display:none;}
     .caja-mode-btn{flex-shrink:0;padding:8px 16px;border-radius:20px;border:2px solid var(--borde);background:var(--surface);color:var(--text2);font-size:0.85rem;font-weight:600;cursor:pointer;}
     .caja-mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
     .caja-mode-content{display:none;padding:12px;}
     .caja-mode-content.active{display:block;}
     .importe-monto-input{font-size:2rem;font-weight:700;text-align:center;border:2px solid var(--borde);border-radius:var(--radius);padding:12px;width:100%;margin-bottom:12px;color:var(--accent);}
-    
-    .tabs { display:none !important; }
-    </style>
+    .importe-monto-input:focus{border-color:var(--accent);outline:none;}
+
+    /* ══ MODAL RAVENTECHS ══ */
+    #modalRaven{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;align-items:flex-end;justify-content:center;}
+    #modalRavenInner{background:var(--surface);border-radius:20px 20px 0 0;padding:0 0 32px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;}
+    .raven-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid var(--borde);}
+    .raven-hdr h3{font-size:16px;font-weight:700;}
+    .btn-cerrar-modal{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;}
+
+  </style>
 </head>
 <body>
-<div id="offlineBanner" style="display:none;background:#7c3200;color:#ffd9b3;font-size:0.8rem;font-weight:600;text-align:center;padding:6px 12px;">📴 Sin conexión — ventas guardadas localmente, se sincronizan al reconectar</div>
 
 <!-- ══ LOADING SCREEN ══ -->
 <div id="loading">
   <div class="loader-meat">
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Sombra/grosor 3D inferior -->
-          <path d="M14,73 Q18,84 38,90 Q61,96 81,83 Q93,74 91,63 L86,66 Q88,75 77,81 Q59,91 38,85 Q21,80 18,72Z" fill="#c8926a" opacity=".85"/>
-          <!-- Grasa exterior (borde crema) -->
-          <path d="M12,57 Q9,38 23,26 Q38,11 62,10 Q82,9 92,26 Q100,41 96,61 Q92,77 74,85 Q56,93 34,88 Q14,82 12,69Z" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
-          <!-- Carne roja interior -->
-          <path d="M21,56 Q18,40 31,30 Q44,17 65,15 Q82,14 90,30 Q97,43 93,60 Q89,74 72,81 Q56,88 37,84 Q23,79 21,67Z" fill="#c0392b"/>
-          <!-- Marcas de parrilla (diagonales, igual a la imagen) -->
-          <line x1="47" y1="23" x2="84" y2="58" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
-          <line x1="41" y1="34" x2="80" y2="68" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
-          <line x1="36" y1="47" x2="73" y2="79" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
-          <!-- Hueso (círculo en esquina superior izquierda del bife) -->
-          <circle cx="37" cy="37" r="9" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
-          <circle cx="37" cy="37" r="5.5" fill="#e8c48e"/>
-          <!-- Brillo de superficie -->
-          <path d="M70,17 Q85,25 89,41" stroke="#e05050" stroke-width="5" stroke-linecap="round" fill="none" opacity=".3"/>
-        </svg>
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="50" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
+      <ellipse cx="42" cy="45" rx="10" ry="6" fill="#B22222" opacity=".7"/>
+      <ellipse cx="58" cy="55" rx="8" ry="5" fill="#CD5C5C" opacity=".5"/>
+      <path d="M22 35 Q18 28 24 24 L30 28 Q26 30 24 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
+      <path d="M78 35 Q82 28 76 24 L70 28 Q74 30 76 35Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1"/>
+    </svg>
   </div>
-  <div class="loader-text">CarneAR</div>
+  <div class="loader-text">CarnéAR</div>
   <div class="loader-sub">Preparando el mostrador…</div>
 </div>
 
@@ -381,24 +285,14 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
   <div class="login-card">
     <div class="login-logo">
       <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Sombra/grosor 3D inferior -->
-          <path d="M14,73 Q18,84 38,90 Q61,96 81,83 Q93,74 91,63 L86,66 Q88,75 77,81 Q59,91 38,85 Q21,80 18,72Z" fill="#c8926a" opacity=".85"/>
-          <!-- Grasa exterior (borde crema) -->
-          <path d="M12,57 Q9,38 23,26 Q38,11 62,10 Q82,9 92,26 Q100,41 96,61 Q92,77 74,85 Q56,93 34,88 Q14,82 12,69Z" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
-          <!-- Carne roja interior -->
-          <path d="M21,56 Q18,40 31,30 Q44,17 65,15 Q82,14 90,30 Q97,43 93,60 Q89,74 72,81 Q56,88 37,84 Q23,79 21,67Z" fill="#c0392b"/>
-          <!-- Marcas de parrilla (diagonales, igual a la imagen) -->
-          <line x1="47" y1="23" x2="84" y2="58" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
-          <line x1="41" y1="34" x2="80" y2="68" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
-          <line x1="36" y1="47" x2="73" y2="79" stroke="#7b1208" stroke-width="3.5" stroke-linecap="round" opacity=".68"/>
-          <!-- Hueso (círculo en esquina superior izquierda del bife) -->
-          <circle cx="37" cy="37" r="9" fill="#f0d4a0" stroke="#c8a870" stroke-width="1.5"/>
-          <circle cx="37" cy="37" r="5.5" fill="#e8c48e"/>
-          <!-- Brillo de superficie -->
-          <path d="M70,17 Q85,25 89,41" stroke="#e05050" stroke-width="5" stroke-linecap="round" fill="none" opacity=".3"/>
-        </svg>
+        <ellipse cx="50" cy="52" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
+        <ellipse cx="42" cy="47" rx="10" ry="6" fill="#B22222" opacity=".7"/>
+        <ellipse cx="60" cy="57" rx="8" ry="5" fill="#CD5C5C" opacity=".5"/>
+        <path d="M22 38 Q18 30 24 26 L30 30 Q26 33 24 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
+        <path d="M78 38 Q82 30 76 26 L70 30 Q74 33 76 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
+      </svg>
     </div>
-    <h1>Carne<span>AR</span></h1>
+    <h1>Carné<span>AR</span></h1>
     <p>Caja registradora para carnicerías</p>
 
     <div id="loginFormFields">
@@ -424,17 +318,15 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 <div id="app">
   <header class="topbar">
     <div class="topbar-left">
-      <button id="logoBtn" aria-label="CarneAR">
+      <button id="logoBtn" aria-label="CarnéAR">
         <svg class="topbar-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12,57 Q9,38 23,26 Q38,11 62,10 Q82,9 92,26 Q100,41 96,61 Q92,77 74,85 Q56,93 34,88 Q14,82 12,69Z" fill="#8B0000"/>
-          <path d="M21,56 Q18,40 31,30 Q44,17 65,15 Q82,14 90,30 Q97,43 93,60 Q89,74 72,81 Q56,88 37,84 Q23,79 21,67Z" fill="#c0392b"/>
-          <line x1="47" y1="23" x2="84" y2="58" stroke="#5a0000" stroke-width="3" stroke-linecap="round" opacity=".6"/>
-          <line x1="41" y1="34" x2="80" y2="68" stroke="#5a0000" stroke-width="3" stroke-linecap="round" opacity=".6"/>
-          <circle cx="37" cy="37" r="9" fill="#8B0000" stroke="#5a0000" stroke-width="2"/>
-          <circle cx="37" cy="37" r="5" fill="#7b1208"/>
+          <ellipse cx="50" cy="52" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
+          <ellipse cx="42" cy="47" rx="10" ry="6" fill="#B22222" opacity=".7"/>
+          <ellipse cx="60" cy="57" rx="8" ry="5" fill="#CD5C5C" opacity=".5"/>
+          <path d="M22 38 Q18 30 24 26 L30 30 Q26 33 24 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
         </svg>
       </button>
-      <span class="topbar-title">Carne<span>AR</span></span>
+      <span class="topbar-title">Carné<span>AR</span></span>
     </div>
     <div class="topbar-right">
       <button id="themeBtn">🌙</button>
@@ -444,25 +336,26 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 
   <div class="tabs" id="tabsBar"></div>
 
-  <!-- DASHBOARD MULTI-SUCURSAL (solo visible si limiteSucursales > 1) -->
+  <!-- DASHBOARD MULTI-SUCURSAL -->
   <div class="section" id="sec-dashboard">
-    <div style="background:var(--accent);color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:14px;">
-      <div style="font-size:12px;opacity:.8;">Bienvenido/a,</div>
-      <div id="dashNombre" style="font-size:20px;font-weight:700;margin:4px 0 12px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;">
-          <div style="font-size:10px;opacity:.8;">Ventas hoy (total)</div>
-          <div id="dashTotalGlobal" style="font-size:18px;font-weight:700;">$0</div>
+    <div style="background:var(--accent);color:#fff;padding:20px 16px 16px;margin-bottom:14px;">
+      <div style="font-size:12px;opacity:.8">Bienvenido/a,</div>
+      <div id="dashNombre" style="font-size:20px;font-weight:700;margin:4px 0 12px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
+          <div style="font-size:10px;opacity:.8">Ventas hoy (total)</div>
+          <div id="dashTotalHoy" style="font-size:18px;font-weight:700">$0</div>
         </div>
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px;">
-          <div style="font-size:10px;opacity:.8;">Sucursales activas</div>
-          <div id="dashSucActivas" style="font-size:18px;font-weight:700;">0</div>
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
+          <div style="font-size:10px;opacity:.8">Sucursales activas</div>
+          <div id="dashActivas" style="font-size:18px;font-weight:700">0</div>
         </div>
       </div>
     </div>
-    <h2 style="margin-bottom:12px;">Mis Sucursales</h2>
-    <div id="sucursalesCards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-
+    <div style="padding:0 12px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Mis sucursales — tocá para entrar</div>
+      <div class="suc-grid" id="sucGrid"></div>
+    </div>
   </div>
 
   <!-- DASHBOARD (inicio dueño) -->
@@ -484,9 +377,9 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 
   <!-- CAJA -->
   <div class="section" id="sec-caja">
-    <div id="offlineBadgeBox" style="display:none;background:#2a1800;border:1px solid #e67e22;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin:8px 12px 0;">⏳ Ventas pendientes: <strong id="offlineBadgeCount">0</strong></div>
+    <!-- MODE BAR CAJA -->
     <div class="caja-mode-bar" id="cajaModeBar">
-      <button class="caja-mode-btn active" onclick="setCajaMode('catalogo')">🥩 Catalogo</button>
+      <button class="caja-mode-btn active" onclick="setCajaMode('catalogo')">🥩 Catálogo</button>
       <button class="caja-mode-btn" onclick="setCajaMode('importe')">💰 Importe</button>
       <button class="caja-mode-btn" id="modeTicketBtn" onclick="setCajaMode('ticket')" style="display:none">📸 Ticket</button>
     </div>
@@ -494,32 +387,35 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
       <div class="grupos-bar" id="gruposBar"></div>
       <div class="pos-grid" id="posGrid"></div>
     </div>
+    <!-- IMPORTE MODE -->
     <div class="caja-mode-content" id="modeImporte">
       <div style="padding:8px 0">
-        <p style="font-size:0.8rem;color:var(--text2);margin-bottom:10px">Ingresa el monto y cobra sin seleccionar productos.</p>
+        <p style="font-size:0.8rem;color:var(--text2);margin-bottom:10px">Ingresá el monto y cobrá sin seleccionar productos.</p>
         <input type="number" id="vrMonto" class="importe-monto-input" placeholder="$ 0" min="0">
-        <input type="text" id="vrDesc" placeholder="Descripcion (opcional)" style="margin-bottom:10px">
+        <input type="text" id="vrDesc" placeholder="Descripción (opcional)" style="margin-bottom:10px">
         <select id="vrMetodo" style="margin-bottom:10px">
-          <option value="efectivo">Efectivo</option>
-          <option value="transferencia">Transferencia</option>
-          <option value="tarjeta">Tarjeta</option>
-          <option value="mercadopago">MercadoPago</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="transferencia">📲 Transferencia</option>
+          <option value="tarjeta">💳 Tarjeta</option>
+          <option value="mercadopago">🔵 MercadoPago</option>
         </select>
-        <button onclick="registrarVentaRapida()" style="width:100%;background:var(--verde,#27ae60);color:#fff;border:none;border-radius:var(--radius);padding:14px;font-weight:700;font-size:1rem;cursor:pointer;">Cobrar</button>
+        <button onclick="registrarVentaRapida()" style="width:100%;background:var(--verde,#27ae60);color:#fff;border:none;border-radius:var(--radius);padding:14px;font-weight:700;font-size:1rem;cursor:pointer;">✅ Cobrar</button>
       </div>
     </div>
+    <!-- TICKET MODE -->
     <div class="caja-mode-content" id="modeTicket">
       <div style="text-align:center;padding:8px 0">
-        <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px">Saca una foto al ticket y la IA carga los items al carrito.</p>
-        <input type="file" id="inputTicket" accept="image/*" capture="environment" style="display:none" onchange="leerTicket(this)">
-        <button class="btn-ticket-camara" onclick="document.getElementById('inputTicket').click()" style="width:100%">Sacar foto del ticket</button>
-        <img id="ticketPreview" class="ticket-preview" alt="Preview ticket" style="margin-top:10px">
-        <div id="ticketLoading" class="ticket-loading" style="display:none">Analizando ticket...</div>
+        <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px">Sacá foto al ticket de balanza y la IA carga los items.</p>
+        <input type="file" id="inputTicket" accept="image/*" capture="environment" style="display:none" onchange="window.leerTicket(this)">
+        <button class="btn-ticket-camara" onclick="document.getElementById('inputTicket').click()" style="width:100%">📷 Sacar foto del ticket</button>
+        <img id="ticketPreview" class="ticket-preview" alt="Preview ticket" style="margin-top:10px;max-width:100%;display:none">
+        <div id="ticketLoading" class="ticket-loading" style="display:none">🤖 Analizando ticket...</div>
         <div id="ticketItems" class="ticket-items"></div>
-        <button class="btn-cargar-ticket" id="btnCargarTicket" onclick="cargarItemsTicket()" style="width:100%;margin-top:8px">Cargar venta con estos items</button>
+        <button class="btn-cargar-ticket" id="btnCargarTicket" onclick="window.cargarItemsTicket()" style="display:none;width:100%;margin-top:8px">✅ Cargar al carrito</button>
       </div>
     </div>
-    <div class="cart" id="cartArea" style="margin:0 12px">
+
+    <div class="cart" id="cartArea">
       <h3>🛒 Carrito <span id="cartCount">(0)</span></h3>
       <div id="cartList"></div>
       <div class="cart-total">Total: $<span id="cartTotal">0</span></div>
@@ -527,11 +423,6 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
         <button class="btn-limpiar" id="cartClearBtn">Vaciar</button>
         <button class="btn-cobrar" id="cartCobrarBtn">Cobrar</button>
       </div>
-    </div>
-    <div style="margin-top:12px;background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:14px;">
-      <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔒 Cierre de caja</h3>
-      <p style="font-size:0.75rem;color:var(--text2);margin-bottom:8px;">Genera el resumen del turno y lo envía por WhatsApp. La caja sigue operativa.</p>
-      <button id="cierreBtn" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:13px;font-weight:700;font-size:0.95rem;cursor:pointer;">Cerrar caja y enviar resumen</button>
     </div>
   </div>
 
@@ -543,7 +434,7 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
   </div>
 
   <!-- REPORTES -->
-  <div class="section" id="sec-reportes" style="display:none!important">
+  <div class="section" id="sec-reportes">
     <h2>📊 Reportes del día</h2>
     <div id="reportCards"></div>
   </div>
@@ -574,30 +465,7 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
     <div id="stockList"></div>
   </div>
 
-  
-<!-- MÓDULO TICKET (Plus) -->
-<div class="section" id="sec-ticket" style="display:none!important">
-  <h3 style="margin-bottom:16px">📸 Escáner de ticket</h3>
-  <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
-    Sacale una foto al ticket de balanza y la IA carga los items automáticamente.
-  </p>
-  <div class="ticket-scanner">
-    <input type="file" id="inputTicket" accept="image/*" capture="environment" style="display:none" onchange="leerTicket(this)">
-    <button class="btn-ticket-camara" onclick="document.getElementById('inputTicket').click()">
-      📷 Sacar foto del ticket
-    </button>
-    <img id="ticketPreview" class="ticket-preview" alt="Preview ticket">
-    <div id="ticketLoading" class="ticket-loading" style="display:none">
-      🤖 Analizando ticket...
-    </div>
-    <div id="ticketItems" class="ticket-items"></div>
-    <button class="btn-cargar-ticket" id="btnCargarTicket" onclick="cargarItemsTicket()">
-      ✅ Cargar venta con estos items
-    </button>
-  </div>
-</div>
-
-<!-- GASTOS (plus) -->
+  <!-- GASTOS (plus) -->
   <div class="section" id="sec-gastos">
     <h2>💸 Gastos</h2>
     <button class="btn-save" style="width:100%;margin-bottom:14px" id="gastoAddBtn">+ Registrar gasto</button>
@@ -619,58 +487,29 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 
   <!-- CONFIG -->
   <div class="section" id="sec-config">
-    <div class="config-group">
-      <h3>💾 Backup de datos</h3>
-      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px;">Se genera automáticamente una vez por día. Guardá el archivo en un lugar seguro.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <button class="btn-save" style="width:auto;padding:9px 14px;font-size:0.82rem;" onclick="generarBackup(false)">📥 Descargar backup</button>
-        <button class="btn-cancel" style="width:auto;padding:9px 14px;font-size:0.82rem;" onclick="document.getElementById('inputRestaurar').click()">📤 Restaurar</button>
-      </div>
-      <input type="file" id="inputRestaurar" accept=".json" style="display:none;" onchange="restaurarBackup(this)">
-      <p style="font-size:0.75rem;color:var(--text2);">Último backup: <span id="ultimoBackupFecha">—</span></p>
-    </div>
-        <h2>⚙️ Configuración</h2>
+    <h2>⚙️ Configuración</h2>
     <div class="config-group">
       <h3>Catálogo</h3>
       <button class="btn-warning" id="configResetBtn">🔄 Restablecer catálogo de ejemplo</button>
       <button class="btn-warning" id="configCleanDupBtn">🧹 Limpiar duplicados</button>
     </div>
     <div class="config-group">
-      <h3>📲 WhatsApp para cierre de caja</h3>
-      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:8px;">Número al que se envía el resumen. Formato: 5491112345678</p>
-      <input type="tel" id="cfgWhatsapp" inputmode="numeric" placeholder="5491112345678" style="margin-bottom:8px;">
-      <button class="btn-save" id="guardarWhatsappBtn" style="width:100%;">Guardar número</button>
-    </div>
-    <div class="config-group">
       <h3>Cuenta</h3>
       <button class="btn-danger" id="configLogoutBtn">🚪 Cerrar sesión</button>
     </div>
-    <!-- SUCURSALES — visible al dueño cuando limiteSucursales > 1 -->
+    <!-- SUCURSALES (visible cuando limiteSucursales > 1) -->
     <div class="config-group hidden" id="sucursalesConfigGroup">
       <h3>🏪 Mis sucursales</h3>
-      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px;">
-        Gestioná tus sucursales y compartí el acceso a cada cajero.
-      </p>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Gestioná tus sucursales y compartí el acceso al cajero.</p>
       <div id="sucursalesConfigList"></div>
-      <button id="btnNuevaSucConfig" class="btn-save" style="width:100%;margin-top:8px;">+ Nueva sucursal</button>
-      <p id="sucLimiteInfo" style="font-size:0.75rem;color:var(--text2);margin-top:6px;text-align:center;"></p>
+      <button id="btnNuevaSucConfig" class="btn-save" style="width:100%;margin-top:8px">+ Nueva sucursal</button>
+      <p id="sucLimiteInfo" style="font-size:0.75rem;color:var(--text2);margin-top:6px;text-align:center"></p>
     </div>
 
     <div id="featuresPanelArea" class="hidden"></div>
   </div>
 </div>
 
-
-<!-- MODAL RAVENTECHS — Panel oculto PIN 2580 -->
-<div id="modalRaven" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;align-items:flex-end;justify-content:center;">
-  <div id="modalRavenInner" style="background:var(--surface);border-radius:20px 20px 0 0;padding:0 0 32px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid var(--borde);">
-      <span style="font-size:16px;font-weight:700;">🦅 RavenTechs — Features Plus</span>
-      <button onclick="cerrarModalRaven()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;">✕</button>
-    </div>
-    <div id="ravenContent" style="padding:0 20px 8px;"></div>
-  </div>
-</div>
 <!-- BOTTOM NAV -->
 <div class="mob-nav hidden" id="mobNav"></div>
 
@@ -807,20 +646,6 @@ const PIN_CAJERO = '2468';
 const PIN_ADMIN = '2580';
 const ADMIN_EMAIL = 'rgaraventa@gmail.com';
 
-// ── HELPER: colección scoped por sucursal ──
-// Si currentSucursal es null o 'principal' → usa ruta existente (backward compatible)
-// Si es otra sucursal → usa ruta scoped bajo sucursales/{id}/
-function col(name) {
-  const uid = getUserDoc();
-  if (!uid) return null;
-  if (!currentSucursal || currentSucursal.id === 'principal') {
-    return col(name);
-  }
-  return db.collection('negocios').doc(uid)
-           .collection('sucursales').doc(currentSucursal.id)
-           .collection(name);
-}
-
 const GRUPOS_MAP = {
   'Vacuna': 'Vacuna',
   'Cerdo': 'Cerdo',
@@ -927,20 +752,18 @@ const INSUMOS_BASICOS = [
 
 // ══════════ STATE ══════════
 let currentUser = null;
-let userRole = 'dueno';
+let userRole = 'dueno'; // dueno | cajero
 let appRunning = false;
-let limiteSucursales = parseInt(localStorage.getItem('carnear_ls')) || 1; // dueno | cajero
-// ── MULTI-SUCURSAL ──
-let currentSucursal = null;   // null = principal (datos en raíz, backward compatible)
+let ownerUid = null;        // UID del dueño (para cajero por link)
+let currentSucursal = null; // {id, nombre} — null = modo principal
 let sucursales = [];
-// limiteSucursales en estado inicial
-let ownerUid = null; // UID del dueño — lo usa el cajero para escribir en la ruta correcta
+let limiteSucursales = parseInt(localStorage.getItem('carnear_ls')) || 1;
+const _dashUnsubs = [];
 let productos = [];
 let insumos = [];
 let gastos = [];
 let proveedores = [];
-const TICKET_WORKER_URL = 'https://dark-disk-07ec.rgaraventa.workers.dev';
-let features = { gastos: false, proveedores: false, ticket: false };
+let features = { gastos: false, proveedores: false };
 let carrito = [];
 let currentGrupo = null;
 let logoTaps = 0;
@@ -959,7 +782,12 @@ let isDark = localStorage.getItem('carnear-dark') === '1';
 // ══════════ TABS CONFIG ══════════
 function getTabsForRole() {
   if(userRole === 'cajero') {
-    const t = [{id:'caja',icon:'🥩',label:'Caja'},{id:'menu',icon:'📋',label:'Menú'},{id:'historial',icon:'📜',label:'Historial'},{id:'stock',icon:'📦',label:'Stock'}];
+    const t = [
+      {id:'caja',icon:'🥩',label:'Caja'},
+      {id:'menu',icon:'📋',label:'Menú'},
+      {id:'historial',icon:'📜',label:'Historial'},
+      {id:'stock',icon:'📦',label:'Stock'}
+    ];
     if(features.gastos) t.push({id:'gastos',icon:'💸',label:'Gastos'});
     return t;
   }
@@ -971,7 +799,6 @@ function getTabsForRole() {
     {id:'stock',icon:'📦',label:'Stock'}
   ];
   if(features.gastos) tabs.push({id:'gastos',icon:'💸',label:'Gastos'});
-    // ticket integrado en Caja
   if(features.proveedores) tabs.push({id:'proveedores',icon:'🏭',label:'Proveed.'});
   tabs.push({id:'config',icon:'⚙️',label:'Config'});
   return tabs;
@@ -982,25 +809,34 @@ document.addEventListener('DOMContentLoaded', () => {
   if(isDark) document.body.classList.add('dark');
   updateThemeBtn();
 
+  // Detectar link de cajero
+  const _urlParams = new URLSearchParams(location.search);
+  const _codigoLink = _urlParams.get('s');
+  if (_codigoLink) {
+    auth.signInAnonymously().catch(e => logError('anonAuth', e.message));
+  }
+
   setTimeout(() => {
     document.getElementById('loading').style.display = 'none';
     auth.onAuthStateChanged(user => {
-      if(user && !user.isAnonymous) {
+      if (user && !user.isAnonymous) {
+        if (appRunning && currentUser && currentUser.uid === user.uid) return;
+        appRunning = true;
         currentUser = user;
         userRole = 'dueno';
-        // Entra al app de inmediato (igual que v1.3), luego verifica sucursales
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-        setTimeout(() => verificarMultiSucursal(), limiteSucursales > 1 ? 0 : 600);
-      } else if(user && user.isAnonymous && !_codigoLink) {
+        const delay = limiteSucursales > 1 ? 0 : 600;
+        setTimeout(() => verificarMultiSucursal(), delay);
+      } else if (user && user.isAnonymous && _codigoLink) {
+        iniciarCajeroLink(_codigoLink);
+      } else if (user && user.isAnonymous && !_codigoLink) {
         currentUser = user;
         userRole = 'cajero';
         currentSucursal = { id: 'principal', nombre: 'Principal' };
         initApp();
-      } else if(user && user.isAnonymous && _codigoLink) {
-        // Cajero accede por link de WhatsApp
-        iniciarCajeroLink(_codigoLink);
       } else {
+        appRunning = false;
         showLogin();
       }
     });
@@ -1104,7 +940,7 @@ function showError(msg) { document.getElementById('loginError').textContent = ms
 
 async function loginGoogle() {
   try {
-      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
   } catch(e) { showError(e.message); }
 }
 
@@ -1134,20 +970,18 @@ function initApp() {
   document.getElementById('login').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('mobNav').classList.remove('hidden');
-  const tabs = getTabsForRole();
-  renderTabs(tabs);
-  if(userRole === 'dueno' && limiteSucursales > 1) {
+  renderTabs(getTabsForRole());
+  if (userRole === 'dueno' && limiteSucursales > 1) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     const sd = document.getElementById('sec-dashboard');
-    if(sd) sd.classList.add('active');
-    verificarMultiSucursal();
+    if (sd) sd.classList.add('active');
   } else {
     switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
   }
   subscribeData();
-  initOffline();
-  cargarWhatsapp();
-  chequearBackupDiario();
+  if (typeof initOffline === 'function') initOffline();
+  if (typeof cargarWhatsapp === 'function') cargarWhatsapp();
+  if (typeof chequearBackupDiario === 'function') chequearBackupDiario();
 }
 
 function renderTabs(tabs) {
@@ -1177,19 +1011,28 @@ function switchTab(id) {
   const sec = document.getElementById('sec-'+id);
   if(sec) sec.classList.add('active');
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-  if(id==='caja') { renderPOS(); actualizarBotonesModoCaja(); setCajaMode('catalogo'); }
+  if(id==='reportes') loadReportes();
   if(id==='historial') loadHistorial('hoy');
   if(id==='inicio') loadDashboard();
   if(id==='gastos') loadGastos('hoy');
   if(id==='proveedores') renderProveedores();
-  if(id==='config') renderSucursalesConfig();
 }
 
 // ══════════ DATA SUBSCRIPTIONS ══════════
 function getUserDoc() {
-  // Cajero: usa el UID del dueño (guardado al leer carnearLinks)
-  if (ownerUid) return ownerUid;
-  return currentUser ? currentUser.uid : null;
+  return ownerUid || (currentUser ? currentUser.uid : null);
+}
+
+// col(name): ruta scoped por sucursal o principal
+function col(name) {
+  const uid = getUserDoc();
+  if (!uid) return null;
+  if (!currentSucursal || currentSucursal.id === 'principal') {
+    return db.collection('negocios').doc(uid).collection(name);
+  }
+  return db.collection('negocios').doc(uid)
+           .collection('sucursales').doc(currentSucursal.id)
+           .collection(name);
 }
 
 function subscribeData() {
@@ -1206,70 +1049,56 @@ function subscribeData() {
   if(unsubProveedores) unsubProveedores();
   if(unsubFeatures) unsubFeatures();
 
-  // Escuchar cambios: features + limiteSucursales en tiempo real
+  // Features (escuchar cambios en tiempo real para refrescar tabs)
   unsubFeatures = db.collection('negocios').doc(uid).onSnapshot(doc => {
     if (!doc.exists) return;
     const datos = doc.data();
     if (datos.features) {
       const old = JSON.stringify(features);
       features = datos.features;
-      if (JSON.stringify(features) !== old) renderTabs(getTabsForRole());
+      if (JSON.stringify(features) !== old) {
+        renderTabs(getTabsForRole());
+        actualizarBotonesModoCaja();
+      }
     }
     const prevLimite = limiteSucursales;
     limiteSucursales = datos.limiteSucursales || 1;
     localStorage.setItem('carnear_ls', limiteSucursales);
     if (limiteSucursales !== prevLimite && limiteSucursales > 1) {
-      const enConfig = document.getElementById('sec-config')?.classList.contains('active');
-      if (enConfig) renderSucursalesConfig();
       db.collection('negocios').doc(uid).collection('sucursales').get()
         .then(snap => {
-          sucursales = snap.docs.map(s => ({ id: s.id, ...s.data() }));
+          sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           if (sucursales.length > 1) mostrarDashboard();
-        }).catch(e => console.log('sucursales get error:', e.message, e.code));
+          const enConfig = document.getElementById('sec-config')?.classList.contains('active');
+          if (enConfig) renderSucursalesConfig();
+        }).catch(e => console.log('sucursales err:', e.message));
     }
   }, err => console.error('Features error:', err));
 
-  unsubProductos = col('productos')
+  unsubProductos = db.collection('negocios').doc(uid).collection('productos')
     .orderBy('nombre').onSnapshot(snap => {
       productos = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderPOS();
       renderMenu();
     }, err => console.error('Productos error:',err));
 
-  unsubInsumos = col('insumos')
+  unsubInsumos = db.collection('negocios').doc(uid).collection('insumos')
     .orderBy('nombre').onSnapshot(snap => {
       insumos = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderStock();
     }, err => console.error('Insumos error:',err));
 
-  unsubGastos = col('gastos')
+  unsubGastos = db.collection('negocios').doc(uid).collection('gastos')
     .orderBy('fecha','desc').onSnapshot(snap => {
       gastos = snap.docs.map(d => ({id:d.id,...d.data()}));
     }, err => console.error('Gastos error:',err));
 
-  unsubProveedores = col('proveedores')
+  unsubProveedores = db.collection('negocios').doc(uid).collection('proveedores')
     .orderBy('nombre').onSnapshot(snap => {
       proveedores = snap.docs.map(d => ({id:d.id,...d.data()}));
       renderProveedores();
     }, err => console.error('Proveedores error:',err));
 }
-
-
-function setCajaMode(mode) {
-  document.querySelectorAll('.caja-mode-content').forEach(d => d.classList.remove('active'));
-  document.querySelectorAll('.caja-mode-btn').forEach(b => b.classList.remove('active'));
-  const ids = {catalogo:'modeCatalogo',importe:'modeImporte',ticket:'modeTicket'};
-  const el = document.getElementById(ids[mode]);
-  if(el) el.classList.add('active');
-  document.querySelectorAll('#cajaModeBar .caja-mode-btn').forEach(b => {
-    if(b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(mode) > -1) b.classList.add('active');
-  });
-}
-function actualizarBotonesModoCaja() {
-  const btn = document.getElementById('modeTicketBtn');
-  if(btn) btn.style.display = features.ticket ? '' : 'none';
-}
-
 
 // ══════════ POS (CAJA) ══════════
 function renderPOS() {
@@ -1378,39 +1207,6 @@ function openCobrar() {
   document.getElementById('modalCobrar').classList.add('show');
 }
 
-async 
-// ── Venta rápida por importe ─────────────────────────────────
-async function registrarVentaRapida() {
-  const uid = getUserDoc();
-  if (!uid) { toast('Sin sesión activa'); return; }
-  const monto = parseFloat(document.getElementById('vrMonto')?.value) || 0;
-  if (monto <= 0) { toast('Ingresá un monto mayor a $0'); return; }
-  const desc = document.getElementById('vrDesc')?.value.trim() || 'Venta directa';
-  const metodo = document.getElementById('vrMetodo')?.value || 'efectivo';
-  const ahora = new Date();
-  const fechaDia = ahora.toISOString().slice(0,10);
-  const venta = {
-    items: [{ nombre: desc, tamano: '', precio: monto, cantidad: 1 }],
-    total: monto,
-    metodo: metodo,
-    fechaDia: fechaDia,
-    fechaLocal: ahora.toISOString(),
-    sucursalId: currentSucursal?.id || 'principal',
-    ventaRapida: true,
-    uid: uid,
-    ts: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  try {
-    await col('ventas').add(venta);
-    toast('✅ $' + monto.toLocaleString('es-AR') + ' registrado');
-    const m = document.getElementById('vrMonto'); if(m) m.value = '';
-    const d = document.getElementById('vrDesc'); if(d) d.value = '';
-  } catch(e) {
-    logError('ventaRapida', e.message);
-    toast('Error: ' + e.message);
-  }
-}
-
 async function confirmarVenta() {
   const uid = getUserDoc();
   if(!uid) return;
@@ -1420,20 +1216,10 @@ async function confirmarVenta() {
 
   try {
     // Save sale
-    var ventaOffline = { items: items, total: total, metodo: metodo, fechaLocal: new Date().toISOString(), fechaDia: new Date().toISOString().slice(0,10), uid: uid };
-    if (!estaOnline) {
-      await idbAdd('ventas_pendientes', ventaOffline);
-      actualizarBadge();
-      carrito = []; renderCart();
-      document.getElementById('modalCobrar').classList.remove('show');
-      toast('Venta guardada offline');
-      return;
-    }
-    await col('ventas').add({
+    await db.collection('negocios').doc(uid).collection('ventas').add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
-      fechaLocal: new Date().toISOString(),
-      fechaDia: new Date().toISOString().slice(0,10)
+      fechaLocal: new Date().toISOString()
     });
 
     // Decrement stock (per-size recipes)
@@ -1444,7 +1230,7 @@ async function confirmarVenta() {
           const insumo = insumos.find(ins=>ins.id===ing.insumoId);
           if(insumo) {
             const newCant = Math.max(0, (insumo.cantidad||0) - (ing.cantidad * item.cantidad));
-            await col('insumos').doc(insumo.id).update({cantidad:newCant});
+            await db.collection('negocios').doc(uid).collection('insumos').doc(insumo.id).update({cantidad:newCant});
           }
         }
       }
@@ -1589,9 +1375,9 @@ async function guardarProducto() {
 
   try {
     if(editingProductId) {
-      await col('productos').doc(editingProductId).update(data);
+      await db.collection('negocios').doc(uid).collection('productos').doc(editingProductId).update(data);
     } else {
-      await col('productos').add(data);
+      await db.collection('negocios').doc(uid).collection('productos').add(data);
     }
     document.getElementById('modalProducto').classList.remove('show');
     toast(editingProductId ? 'Producto actualizado' : 'Producto creado');
@@ -1602,7 +1388,7 @@ async function deleteProduct(id) {
   if(!confirm('¿Eliminar este producto?')) return;
   const uid = getUserDoc();
   try {
-    await col('productos').doc(id).delete();
+    await db.collection('negocios').doc(uid).collection('productos').doc(id).delete();
     toast('Producto eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -1638,7 +1424,7 @@ async function adjustStock(id, direction) {
   if(!ins) return;
   const newCant = Math.max(0, (ins.cantidad||0) + (amount * direction));
   try {
-    await col('insumos').doc(id).update({cantidad:newCant});
+    await db.collection('negocios').doc(uid).collection('insumos').doc(id).update({cantidad:newCant});
   } catch(e) { toast('Error: '+e.message); }
 }
 
@@ -1663,9 +1449,9 @@ async function guardarInsumo() {
 
   try {
     if(editingStockId) {
-      await col('insumos').doc(editingStockId).update({nombre,unidad,cantidad,umbral});
+      await db.collection('negocios').doc(uid).collection('insumos').doc(editingStockId).update({nombre,unidad,cantidad,umbral});
     } else {
-      await col('insumos').add({nombre,unidad,cantidad,umbral});
+      await db.collection('negocios').doc(uid).collection('insumos').add({nombre,unidad,cantidad,umbral});
     }
     document.getElementById('modalStock').classList.remove('show');
     editingStockId = null;
@@ -1677,7 +1463,7 @@ async function deleteInsumo(id) {
   if(!confirm('¿Eliminar este insumo?')) return;
   const uid = getUserDoc();
   try {
-    await col('insumos').doc(id).delete();
+    await db.collection('negocios').doc(uid).collection('insumos').doc(id).delete();
     toast('Insumo eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -1691,7 +1477,7 @@ async function cargarInsumosBasicos() {
       // Avoid duplicates by name
       const existing = insumos.find(i => i.nombre.toLowerCase() === ins.nombre.toLowerCase());
       if(!existing) {
-        await col('insumos').add(ins);
+        await db.collection('negocios').doc(uid).collection('insumos').add(ins);
         count++;
       }
     }
@@ -1720,7 +1506,7 @@ async function loadDashboard() {
 
   try {
     // Traer ventas del mes (incluye semana y hoy)
-    const snap = await col('ventas')
+    const snap = await db.collection('negocios').doc(uid).collection('ventas')
       .where('fecha','>=',mesStart).get();
 
     let hoyTotal=0, hoyCount=0, semTotal=0, semCount=0, mesTotal=0, mesCount=0;
@@ -1749,7 +1535,7 @@ async function loadDashboard() {
   if(features.gastos) {
     try {
       const mesStart2 = new Date(now.getFullYear(), now.getMonth(), 1);
-      const gSnap = await col('gastos')
+      const gSnap = await db.collection('negocios').doc(uid).collection('gastos')
         .where('fecha','>=',mesStart2).get();
       let gastosMes = 0;
       gSnap.forEach(doc => { gastosMes += doc.data().monto || 0; });
@@ -1791,7 +1577,7 @@ async function loadReportes() {
   today.setHours(0,0,0,0);
 
   try {
-    const snap = await col('ventas')
+    const snap = await db.collection('negocios').doc(uid).collection('ventas')
       .where('fecha','>=',today).get();
     let totalVentas = 0, totalIngresos = 0, efectivo = 0, transferencia = 0;
     snap.forEach(doc => {
@@ -1815,65 +1601,56 @@ async function loadReportes() {
 async function loadHistorial(filter) {
   const uid = getUserDoc();
   if(!uid) return;
-  let desdeDia, hastaDia;
-  const hoy = new Date().toISOString().slice(0,10);
+  let desde, hasta = new Date();
+  hasta.setHours(23,59,59,999);
 
   if(filter === 'hoy') {
-    desdeDia = hastaDia = hoy;
+    desde = new Date(); desde.setHours(0,0,0,0);
   } else if(filter === 'semana') {
-    const d = new Date(); d.setDate(d.getDate()-6);
-    desdeDia = d.toISOString().slice(0,10); hastaDia = hoy;
+    desde = new Date();
+    desde.setDate(desde.getDate() - desde.getDay());
+    desde.setHours(0,0,0,0);
   } else {
-    desdeDia = document.getElementById('histDesde').value;
-    hastaDia = document.getElementById('histHasta').value;
-    if(!desdeDia||!hastaDia) return toast('Seleccioná ambas fechas');
+    const d = document.getElementById('histDesde').value;
+    const h = document.getElementById('histHasta').value;
+    if(!d||!h) return toast('Seleccioná ambas fechas');
+    desde = new Date(d+'T00:00:00');
+    hasta = new Date(h+'T23:59:59');
   }
 
   try {
-    let ventas = [];
+    const snap = await db.collection('negocios').doc(uid).collection('ventas')
+      .where('fecha','>=',desde).where('fecha','<=',hasta)
+      .orderBy('fecha','desc').get();
 
-    if (estaOnline) {
-      const snap = await col('ventas')
-        .where('fechaDia','>=',desdeDia).where('fechaDia','<=',hastaDia)
-        .orderBy('fechaDia','desc').get();
-      snap.forEach(doc => ventas.push(doc.data()));
-    }
+    let totalV = 0, totalI = 0;
+    const ventas = [];
+    snap.forEach(doc => {
+      const v = doc.data();
+      totalV++;
+      totalI += v.total||0;
+      ventas.push(v);
+    });
 
-    // Agregar ventas offline pendientes del período
-    if (idb) {
-      const pendientes = await idbGetAll('ventas_pendientes');
-      pendientes.filter(v => v.fechaDia >= desdeDia && v.fechaDia <= hastaDia)
-        .forEach(v => ventas.push(v));
-    }
-
-    const totalV = ventas.length;
-    const totalI = ventas.reduce((s,v) => s+(v.total||0), 0);
-    const tEfectivo = ventas.filter(v=>(v.metodo||v.metodoPago)==='efectivo').reduce((s,v)=>s+(v.total||0),0);
-
-    document.getElementById('historialSummary').innerHTML =
-      '<div class="historial-summary">' +
-      '<div><h4>Ventas</h4><p>' + totalV + '</p></div>' +
-      '<div><h4>Ingresos</h4><p>$' + totalI.toLocaleString('es-AR') + '</p></div>' +
-      '<div><h4>Efectivo</h4><p>$' + tEfectivo.toLocaleString('es-AR') + '</p></div>' +
-      '</div>';
+    document.getElementById('historialSummary').innerHTML = `
+      <div class="historial-summary">
+        <div><h4>Ventas</h4><p>${totalV}</p></div>
+        <div><h4>Ingresos</h4><p>$${totalI.toLocaleString()}</p></div>
+      </div>`;
 
     const list = document.getElementById('historialList');
     if(!ventas.length) { list.innerHTML='<div class="empty-state"><p>Sin ventas en este período</p></div>'; return; }
 
-    list.innerHTML = ventas.map(function(v) {
-      var fecha = v.fechaDia || (v.fechaLocal ? v.fechaLocal.slice(0,10) : '');
-      var itemsStr = (v.items||[]).map(function(i){ return i.nombre + ' (' + (i.tamano||i.tamanoNombre||'') + ') x' + i.cantidad; }).join(', ');
-      var metodo = v.metodo || v.metodoPago || '';
-      var icono = metodo === 'efectivo' ? '💵' : metodo === 'debito' ? '💳' : '📲';
-      var offline = !v.fecha ? ' <span style="font-size:0.7rem;color:var(--naranja);">(offline)</span>' : '';
-      return '<div class="venta-card">' +
-        '<div class="venta-card-head"><span>' + fecha + offline + '</span><span>' + icono + ' ' + metodo + '</span></div>' +
-        '<div class="venta-card-items">' + itemsStr + '</div>' +
-        '<div class="venta-card-total">$' + (v.total||0).toLocaleString('es-AR') + '</div>' +
-        '</div>';
+    list.innerHTML = ventas.map(v => {
+      const fecha = v.fecha ? v.fecha.toDate().toLocaleString('es-AR') : (v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
+      const itemsStr = (v.items||[]).map(i=>`${i.nombre} (${i.tamano}) x${i.cantidad}`).join(', ');
+      return `<div class="venta-card">
+        <div class="venta-card-head"><span>${fecha}</span><span>${v.metodo==='efectivo'?'💵':'🏦'} ${v.metodo}</span></div>
+        <div class="venta-card-items">${itemsStr}</div>
+        <div class="venta-card-total">$${(v.total||0).toLocaleString()}</div>
+      </div>`;
     }).join('');
   } catch(e) {
-    logError('historial', e.message);
     document.getElementById('historialList').innerHTML = '<div class="empty-state"><p>Error cargando historial</p></div>';
   }
 }
@@ -1887,14 +1664,14 @@ async function restablecerCatalogo() {
 
   try {
     // Delete all current products
-    const snap = await col('productos').get();
+    const snap = await db.collection('negocios').doc(uid).collection('productos').get();
     const batch1 = db.batch();
     snap.forEach(doc => batch1.delete(doc.ref));
     await batch1.commit();
 
     // Add example catalog
     for(const p of CATALOGO_EJEMPLO) {
-      await col('productos').add({
+      await db.collection('negocios').doc(uid).collection('productos').add({
         nombre: p.nombre,
         categoria: p.categoria,
         tamanos: p.tamanos,
@@ -1908,7 +1685,7 @@ async function restablecerCatalogo() {
 async function limpiarDuplicados() {
   const uid = getUserDoc();
   if(!uid) return;
-  const snap = await col('productos').get();
+  const snap = await db.collection('negocios').doc(uid).collection('productos').get();
   const seen = {};
   let removed = 0;
   const batch = db.batch();
@@ -1973,9 +1750,9 @@ async function guardarGasto() {
 
   try {
     if(editingGastoId) {
-      await col('gastos').doc(editingGastoId).update(data);
+      await db.collection('negocios').doc(uid).collection('gastos').doc(editingGastoId).update(data);
     } else {
-      await col('gastos').add(data);
+      await db.collection('negocios').doc(uid).collection('gastos').add(data);
     }
     document.getElementById('modalGasto').classList.remove('show');
     editingGastoId = null;
@@ -1988,7 +1765,7 @@ async function deleteGasto(id) {
   if(!confirm('¿Eliminar este gasto?')) return;
   const uid = getUserDoc();
   try {
-    await col('gastos').doc(id).delete();
+    await db.collection('negocios').doc(uid).collection('gastos').doc(id).delete();
     toast('Gasto eliminado');
     loadGastos(document.querySelector('#gastosFilters .active').dataset.gf);
   } catch(e) { toast('Error: '+e.message); }
@@ -1998,37 +1775,28 @@ async function loadGastos(filter) {
   const uid = getUserDoc();
   if(!uid) return;
   const now = new Date();
+  let desde = new Date();
 
-  // Calcular rango de fechas como strings (yyyy-mm-dd) para compatibilidad
-  let desdeStr, hastaStr = now.toISOString().slice(0,10);
-  if(filter === 'hoy') {
-    desdeStr = hastaStr;
-  } else if(filter === 'semana') {
-    const d2 = new Date(); d2.setDate(d2.getDate()-6);
-    desdeStr = d2.toISOString().slice(0,10);
+  if(filter === 'hoy') { desde.setHours(0,0,0,0); }
+  else if(filter === 'semana') {
+    const day = desde.getDay();
+    desde.setDate(desde.getDate() - (day===0?6:day-1));
+    desde.setHours(0,0,0,0);
   } else {
-    desdeStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    desde = new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
   try {
-    const snap = await col('gastos').orderBy('fechaDia','desc').get();
-    const todosGastos = [];
+    const snap = await db.collection('negocios').doc(uid).collection('gastos')
+      .where('fecha','>=',desde).orderBy('fecha','desc').get();
+
+    let totalGastos = 0;
+    const lista = [];
     snap.forEach(doc => {
       const g = doc.data();
-      // Aceptar fechaDia (string) o fecha (Timestamp o string)
-      let diaGasto = g.fechaDia;
-      if(!diaGasto && g.fecha) {
-        diaGasto = typeof g.fecha === 'string' ? g.fecha.slice(0,10)
-                 : (g.fecha.toDate ? g.fecha.toDate().toISOString().slice(0,10) : null);
-      }
-      if(diaGasto && diaGasto >= desdeStr && diaGasto <= hastaStr) {
-        todosGastos.push({id:doc.id, ...g, _diaGasto: diaGasto});
-      }
+      totalGastos += g.monto || 0;
+      lista.push({id:doc.id,...g});
     });
-    const lista = todosGastos;
-    const snap2 = {forEach: () => {}}; // ya procesamos arriba
-
-    let totalGastos = lista.reduce((s,g) => s + (g.monto||0), 0);
 
     document.getElementById('gastosSummary').innerHTML = `
       <div style="background:rgba(192,57,43,.08);border:2px solid var(--rojo);border-radius:var(--radius);padding:14px;margin-bottom:14px;text-align:center;">
@@ -2040,7 +1808,7 @@ async function loadGastos(filter) {
     if(!lista.length) { list.innerHTML='<div class="empty-state"><p>Sin gastos en este período</p></div>'; return; }
 
     list.innerHTML = lista.map(g => {
-      const fecha = g._diaGasto || g.fechaDia || (g.fecha && g.fecha.toDate ? g.fecha.toDate().toLocaleDateString('es-AR') : g.fecha) || '';
+      const fecha = g.fecha ? g.fecha.toDate().toLocaleString('es-AR') : '';
       return `<div class="venta-card">
         <div class="venta-card-head">
           <span>${fecha}</span>
@@ -2086,9 +1854,9 @@ async function guardarProveedor() {
 
   try {
     if(editingProvId) {
-      await col('proveedores').doc(editingProvId).update(data);
+      await db.collection('negocios').doc(uid).collection('proveedores').doc(editingProvId).update(data);
     } else {
-      await col('proveedores').add(data);
+      await db.collection('negocios').doc(uid).collection('proveedores').add(data);
     }
     document.getElementById('modalProv').classList.remove('show');
     editingProvId = null;
@@ -2100,7 +1868,7 @@ async function deleteProveedor(id) {
   if(!confirm('¿Eliminar este proveedor?')) return;
   const uid = getUserDoc();
   try {
-    await col('proveedores').doc(id).delete();
+    await db.collection('negocios').doc(uid).collection('proveedores').doc(id).delete();
     toast('Proveedor eliminado');
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -2178,6 +1946,9 @@ function handleLogoTap() {
 }
 
 function showFeaturesPanel() {
+  const area = document.getElementById('featuresPanelArea');
+  area.classList.remove('hidden');
+
   const makeToggle = (key, icon, label) => {
     const checked = features[key] ? 'checked' : '';
     return `<div class="feature-toggle">
@@ -2189,33 +1960,23 @@ function showFeaturesPanel() {
     </div>`;
   };
 
-  document.getElementById('ravenContent').innerHTML = `
-    <div class="features-panel" style="margin-top:12px">
+  area.innerHTML = `
+    <div class="features-panel">
+      <h3>🦅 RavenTechs — Features Plus</h3>
       ${makeToggle('gastos','💸','Gastos')}
       ${makeToggle('proveedores','🏭','Proveedores')}
-      ${makeToggle('ticket','📸','Escáner de tickets')}
       <div class="feature-toggle">
-        <span>🏪 Multi-sucursal <span style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px">PLUS</span></span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12px;color:var(--text2)">Límite:</span>
-          <input type="number" id="inputLimSuc" min="1" max="99" value="${limiteSucursales}" style="width:48px;padding:5px 8px;text-align:center;font-size:13px;" onchange="setLimiteSucursales(this.value)">
-        </div>
+        <span>📱 Pedidos online</span>
+        <span class="text-sm">Próximamente</span>
       </div>
-      <div class="feature-toggle"><span>📱 Pedidos online</span><span class="text-sm">Próximamente</span></div>
-      <div class="feature-toggle"><span>👥 Empleados</span><span class="text-sm">Próximamente</span></div>
+      <div class="feature-toggle">
+        <span>👥 Empleados</span>
+        <span class="text-sm">Próximamente</span>
+      </div>
     </div>
   `;
-
-  const modal = document.getElementById('modalRaven');
-  modal.style.display = 'flex';
-  modal.onclick = e => { if(e.target===modal) cerrarModalRaven(); };
+  switchTab('config');
   toast('Panel RavenTechs activado');
-  const limEl = document.getElementById('inputLimSuc');
-  if (limEl) limEl.value = limiteSucursales;
-}
-
-function cerrarModalRaven() {
-  document.getElementById('modalRaven').style.display = 'none';
 }
 
 async function toggleFeature(key, value) {
@@ -2228,7 +1989,7 @@ async function toggleFeature(key, value) {
     features[key] = value;
     const tabs = getTabsForRole();
     renderTabs(tabs);
-    if(document.getElementById('modalRaven').style.display !== 'none') showFeaturesPanel();
+    showFeaturesPanel();
     toast(`${key} ${value?'activado':'desactivado'}`);
   } catch(e) { toast('Error: '+e.message); }
 }
@@ -2264,50 +2025,40 @@ function toast(msg) {
   }
 
 
-// ══════════════════════════════════════════════
-// MULTI-SUCURSAL — Dashboard y gestión
-// ══════════════════════════════════════════════
-
-// Detectar acceso de cajero por link WhatsApp (?s=CODIGO)
-const _urlParams = new URLSearchParams(location.search);
-const _codigoLink = _urlParams.get('s');
-// Iniciar auth anónima para cajero por link — el onAuthStateChanged maneja el resto
-if (_codigoLink && !firebase.auth().currentUser) {
-  firebase.auth().signInAnonymously().catch(e => {
-    logError('cajeroLink', e.message);
-    document.getElementById('loading').style.display = 'none';
-    showLogin();
-  });
-}
+// ══════════════════════════════════════════════════════════════
+// MULTI-SUCURSAL — Funciones principales
+// ══════════════════════════════════════════════════════════════
 
 async function iniciarCajeroLink(codigo) {
   try {
     const doc = await db.collection('carnearLinks').doc(codigo).get();
-    if (!doc.exists) { toast('Link inválido o expirado'); return; }
+    if (!doc.exists) { showLogin(); return; }
     const d = doc.data();
-    ownerUid = d.uid; // UID del dueño → cajero escribe bajo este UID
+    ownerUid = d.uid;
+    currentUser = auth.currentUser;
     currentSucursal = { id: d.sucursalId, nombre: d.nomSucursal || 'Sucursal' };
     userRole = 'cajero';
-    currentUser = firebase.auth().currentUser;
+    try {
+      const neg = await db.collection('negocios').doc(d.uid).get();
+      if (neg.exists && neg.data().features) features = Object.assign(features, neg.data().features);
+    } catch(_) {}
     initApp();
   } catch(e) {
     logError('iniciarCajeroLink', e.message);
-    // Mostrar login si algo falla — evita pantalla en blanco
     document.getElementById('loading').style.display = 'none';
     showLogin();
-    toast('Error al acceder: ' + e.message);
   }
 }
-
 
 async function verificarMultiSucursal() {
   const uid = getUserDoc();
   if (!uid) return;
   try {
-    const negDoc = await db.collection('negocios').doc(uid).get();
-    if (negDoc.exists) {
-      const d = negDoc.data();
+    const neg = await db.collection('negocios').doc(uid).get();
+    if (neg.exists) {
+      const d = neg.data();
       limiteSucursales = d.limiteSucursales || 1;
+      localStorage.setItem('carnear_ls', limiteSucursales);
       if (d.features) { features = Object.assign(features, d.features); renderTabs(getTabsForRole()); }
     }
     if (limiteSucursales > 1) {
@@ -2315,272 +2066,241 @@ async function verificarMultiSucursal() {
       sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       if (sucursales.length > 1) mostrarDashboard();
     }
-  } catch(e) {
-    console.log('verificarMultiSucursal error:', e.message, e.code);
-    // Aunque falle la carga, mostrar dashboard si estaba previsto
-    if (limiteSucursales > 1 && sucursales.length > 1) mostrarDashboard();
-  }
+  } catch(e) { console.log('verificarMultiSucursal:', e.message, e.code); }
 }
 
-// Cargar config multi-sucursal al iniciar
-async function cargarConfigSucursales() {
-  const uid = getUserDoc();
-  if (!uid) return;
-  try {
-    const negDoc = await db.collection('negocios').doc(uid).get();
-    if (negDoc.exists) {
-      const d = negDoc.data();
-      limiteSucursales = d.limiteSucursales || 1;
-      if (d.features) features = Object.assign(features, d.features);
-    }
-    const sucSnap = await db.collection('negocios').doc(uid).collection('sucursales').get();
-    sucursales = sucSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    if (limiteSucursales > 1 && sucursales.length > 1) {
-      mostrarDashboard();
-    } else {
-      // Modo mono → usar sucursal principal (ruta plana, backward compatible)
-      currentSucursal = { id: 'principal', nombre: 'Principal' };
-      initApp();
-    }
-  } catch(e) {
-    logError('cargarConfigSucursales', e.message);
-    currentSucursal = { id: 'principal', nombre: 'Principal' };
-    initApp();
-  }
-}
-
-// Dashboard multi-sucursal
-const _dashUnsubs = [];
 function mostrarDashboard() {
-  _dashUnsubs.forEach(u => u && u());
-  _dashUnsubs.length = 0;
-
-  const grid = document.getElementById('sucursalesCards');
+  _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
+  const grid = document.getElementById('sucGrid');
+  if (!grid) return;
   grid.innerHTML = '';
   const totales = {};
   const hoy = new Date().toISOString().split('T')[0];
-  let activas = sucursales.filter(s => s.activa !== false).length;
-  document.getElementById('dashSucActivas').textContent = activas;
+  const uid = getUserDoc();
+  document.getElementById('dashActivas').textContent = sucursales.filter(s => s.activa !== false).length;
   document.getElementById('dashNombre').textContent =
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Propietario';
-
   sucursales.forEach(suc => {
     totales[suc.id] = 0;
     const card = document.createElement('div');
     card.className = 'suc-card';
     card.innerHTML = `<div class="suc-card-nom">🏪 ${suc.nombre}</div>
       <div class="suc-card-lbl">Ventas hoy</div>
-      <div class="suc-card-val" id="svhoy-${suc.id}">$0</div>
+      <div class="suc-card-val" id="sv-${suc.id}">$0</div>
       <span class="badge-activa">${suc.activa !== false ? '● Activa' : '● Inactiva'}</span>`;
     card.onclick = () => entrarEnSucursal(suc);
     grid.appendChild(card);
-
-    const uid = getUserDoc();
-    // Listener sin filtro de fecha para capturar ventas con 'fechaDia' o 'fecha'
     const u = db.collection('negocios').doc(uid).collection('sucursales').doc(suc.id)
-      .collection('ventas').orderBy('fechaLocal', 'desc').limit(200)
-      .onSnapshot(snap => {
+      .collection('ventas').onSnapshot(snap => {
         let t = 0;
+        const h = new Date().toISOString().split('T')[0];
         snap.forEach(d => {
           const v = d.data();
-          const diaVenta = v.fechaDia || v.fecha || (v.fechaLocal ? v.fechaLocal.slice(0,10) : null);
-          if (diaVenta === hoy) t += v.total || 0;
+          const dia = v.fechaDia || v.fecha || (v.fechaLocal ? v.fechaLocal.slice(0,10) : null);
+          if (dia === h) t += v.total || 0;
         });
         totales[suc.id] = t;
-        const el = document.getElementById('svhoy-' + suc.id);
+        const el = document.getElementById('sv-' + suc.id);
         if (el) el.textContent = '$' + t.toLocaleString('es-AR');
-        const globalTotal = Object.values(totales).reduce((a, b) => a + b, 0);
-        const elT = document.getElementById('dashTotalGlobal');
-        if (elT) elT.textContent = '$' + globalTotal.toLocaleString('es-AR');
-      }, e => logError('dashListener', e));
+        document.getElementById('dashTotalHoy').textContent =
+          '$' + Object.values(totales).reduce((a,b)=>a+b,0).toLocaleString('es-AR');
+      }, () => {});
     _dashUnsubs.push(u);
   });
-
-  // Botón agregar sucursal si hay cupo
-  if (sucursales.length < limiteSucursales) {
-    const btn = document.createElement('button');
-    btn.innerHTML = '➕<br><span style="font-size:11px">Nueva</span>';
-    btn.style.cssText = 'background:var(--surface);border:2px dashed var(--borde);border-radius:var(--radius);padding:14px;cursor:pointer;font-size:22px;';
-    btn.onclick = () => abrirModalSucursal();
-    grid.appendChild(btn);
-  }
-
-  // Botones del dashboard
-  // Botones del dashboard manejados desde topbar
-
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-dashboard').classList.add('active');
 }
 
 function entrarEnSucursal(suc) {
-  _dashUnsubs.forEach(u => u && u());
-  _dashUnsubs.length = 0;
+  _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
   currentSucursal = suc;
-  document.querySelector('.tabs')?.classList.remove('hidden');
-  document.getElementById('mobNav')?.classList.remove('hidden');
-  // Agregar botón volver al dashboard en topbar
-  const topLeft = document.querySelector('.topbar-left');
-  if (topLeft && limiteSucursales > 1 && sucursales.length > 1) {
-    const existeBtn = document.getElementById('btnVolverDash');
-    if (!existeBtn) {
-      const btn = document.createElement('button');
-      btn.id = 'btnVolverDash';
-      btn.textContent = '← ';
-      btn.style.cssText = 'background:none;border:none;padding:4px;font-size:16px;color:var(--accent);font-weight:700;';
-      btn.onclick = () => { currentSucursal = null; mostrarDashboard(); };
-      topLeft.insertBefore(btn, topLeft.firstChild);
-    }
-  }
-  // Actualizar título del topbar
   const titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <span style="font-size:12px;font-weight:400;color:var(--text2);">— ${suc.nombre}</span>`;
-  initApp();
-}
-
-// ════════════════════════════════════════════════════
-// SUCURSALES en Config tab (visible al dueño)
-// ════════════════════════════════════════════════════
-
-function editarNombreSuc(id, nombreActual) {
-  const contenedor = document.getElementById('suc-hdr-' + id);
-  if (!contenedor) {
-    // Inline edit en el mismo lugar
-    const todas = document.querySelectorAll('#sucursalesConfigList .config-group');
-    todas.forEach(div => {
-      const btn = div.querySelector('button[onclick*="' + id + '"][title="Editar nombre"]');
-      if (btn) {
-        const infoDiv = btn.closest('div[style*="space-between"]').querySelector('div:first-child');
-        if (infoDiv) {
-          infoDiv.innerHTML = '<input type="text" id="edit-suc-' + id + '" value="' + nombreActual + '" style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:6px;border:2px solid var(--accent);width:140px;margin-right:6px;">' +
-            '<button onclick="guardarNombreSuc(\'' + id + '\')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">✓</button> ' +
-            '<button onclick="renderSucursalesConfig()" style="background:var(--surface);border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;">✕</button>';
-          document.getElementById('edit-suc-' + id)?.focus();
-        }
-      }
-    });
+  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <small style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">— ${suc.nombre}</small>`;
+  const topLeft = document.querySelector('.topbar-left');
+  if (topLeft && !document.getElementById('btnVolverDash')) {
+    const btn = document.createElement('button');
+    btn.id = 'btnVolverDash';
+    btn.innerHTML = '←';
+    btn.style.cssText = 'background:none;border:none;padding:4px 8px;font-size:18px;color:var(--accent);font-weight:700;cursor:pointer;';
+    btn.onclick = () => { currentSucursal = { id: 'principal', nombre: 'Principal' }; verificarMultiSucursal(); };
+    topLeft.insertBefore(btn, topLeft.firstChild);
   }
+  userRole = 'dueno';
+  renderTabs(getTabsForRole());
+  subscribeData();
+  switchTab('caja');
 }
 
-async function guardarNombreSuc(id) {
+// ══ CAJA MODES ═══════════════════════════════════════════════
+function setCajaMode(mode) {
+  document.querySelectorAll('.caja-mode-content').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.caja-mode-btn').forEach(b => b.classList.remove('active'));
+  const ids = { catalogo: 'modeCatalogo', importe: 'modeImporte', ticket: 'modeTicket' };
+  const el = document.getElementById(ids[mode]);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('#cajaModeBar .caja-mode-btn').forEach(b => {
+    if (b.getAttribute('onclick')?.includes("'" + mode + "'")) b.classList.add('active');
+  });
+}
+
+function actualizarBotonesModoCaja() {
+  const btn = document.getElementById('modeTicketBtn');
+  if (btn) btn.style.display = features.ticket ? '' : 'none';
+}
+
+async function registrarVentaRapida() {
   const uid = getUserDoc();
-  const input = document.getElementById('edit-suc-' + id);
-  const nuevoNombre = input?.value.trim();
-  if (!nuevoNombre) { toast('Ingresá un nombre'); return; }
+  if (!uid) return;
+  const monto = parseFloat(document.getElementById('vrMonto')?.value) || 0;
+  if (monto <= 0) { toast('Ingresá un monto mayor a $0'); return; }
+  const desc = document.getElementById('vrDesc')?.value.trim() || 'Venta directa';
+  const metodo = document.getElementById('vrMetodo')?.value || 'efectivo';
+  const ahora = new Date();
+  const fechaDia = ahora.toISOString().slice(0,10);
   try {
-    await db.collection('negocios').doc(uid).collection('sucursales').doc(id).update({ nombre: nuevoNombre });
-    const sucDoc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
-    const cod = sucDoc.data()?.cod;
-    if (cod) await db.collection('carnearLinks').doc(cod).update({ nomSucursal: nuevoNombre });
-    toast('Nombre actualizado');
-    renderSucursalesConfig();
-    if (document.getElementById('sec-dashboard')?.classList.contains('active')) verificarMultiSucursal();
-  } catch(e) { toast('Error: ' + e.message); }
+    await col('ventas').add({
+      items: [{ nombre: desc, tamano: '', precio: monto, cantidad: 1 }],
+      total: monto, metodo, fechaDia,
+      fechaLocal: ahora.toISOString(),
+      uid, ventaRapida: true,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('✅ $' + monto.toLocaleString('es-AR') + ' registrado');
+    const m = document.getElementById('vrMonto'); if(m) m.value = '';
+    const d = document.getElementById('vrDesc'); if(d) d.value = '';
+  } catch(e) { logError('ventaRapida', e.message); toast('Error: ' + e.message); }
 }
 
+// ══ FEATURES PANEL (modal flotante) ══════════════════════════
+function showFeaturesPanel() {
+  const makeToggle = (key, icon, label) => {
+    const checked = features[key] ? 'checked' : '';
+    const estado = features[key] ? 'Activo' : 'Inactivo';
+    return `<div class="feature-toggle">
+      <span>${icon} ${label}</span>
+      <label style="cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" ${checked} onchange="toggleFeature('${key}',this.checked)" style="width:auto;cursor:pointer;">
+        <span style="font-size:12px;color:var(--text2)">${estado}</span>
+      </label>
+    </div>`;
+  };
+  document.getElementById('ravenContent').innerHTML = `
+    <div class="features-panel" style="margin-top:12px">
+      ${makeToggle('gastos','💸','Gastos')}
+      ${makeToggle('proveedores','🏭','Proveedores')}
+      ${makeToggle('ticket','📸','Escáner de tickets')}
+      <div class="feature-toggle">
+        <span>🏪 Multi-sucursal <span style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px">PLUS</span></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:var(--text2)">Límite:</span>
+          <input type="number" id="inputLimSuc" min="1" max="99" value="${limiteSucursales}" style="width:48px;padding:5px 8px;text-align:center;font-size:13px;" onchange="setLimiteSucursales(this.value)">
+        </div>
+      </div>
+      <div class="feature-toggle"><span>📱 Pedidos online</span><span style="font-size:12px;color:var(--text2)">Próximamente</span></div>
+      <div class="feature-toggle"><span>👥 Empleados</span><span style="font-size:12px;color:var(--text2)">Próximamente</span></div>
+    </div>`;
+  const modal = document.getElementById('modalRaven');
+  modal.style.display = 'flex';
+  modal.onclick = e => { if(e.target===modal) cerrarModalRaven(); };
+  const limEl = document.getElementById('inputLimSuc');
+  if (limEl) limEl.value = limiteSucursales;
+}
+
+function cerrarModalRaven() { document.getElementById('modalRaven').style.display = 'none'; }
+
+async function setLimiteSucursales(valor) {
+  const n = parseInt(valor) || 1;
+  limiteSucursales = n;
+  localStorage.setItem('carnear_ls', n);
+  const uid = getUserDoc();
+  if (!uid) return;
+  try {
+    await db.collection('negocios').doc(uid).set({ limiteSucursales: n }, { merge: true });
+    toast('Límite: ' + n + ' sucursal' + (n > 1 ? 'es' : ''));
+  } catch(e) { logError('setLimiteSucursales', e.message); }
+}
+
+// ══ SUCURSALES EN CONFIG ══════════════════════════════════════
 async function renderSucursalesConfig() {
   const grupo = document.getElementById('sucursalesConfigGroup');
   if (!grupo) return;
-
-  // Solo visible si limiteSucursales > 1
-  if (limiteSucursales <= 1) {
-    grupo.classList.add('hidden');
-    return;
-  }
+  if (limiteSucursales <= 1) { grupo.classList.add('hidden'); return; }
   grupo.classList.remove('hidden');
-
   const uid = getUserDoc();
   if (!uid) return;
-
-  // Info de límite
   const infoEl = document.getElementById('sucLimiteInfo');
   const btnNueva = document.getElementById('btnNuevaSucConfig');
-
   try {
     const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
     sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const cantActual = sucursales.length;
-
-    if (infoEl) infoEl.textContent = cantActual + ' de ' + limiteSucursales + ' sucursal' + (limiteSucursales > 1 ? 'es' : '') + ' habilitadas';
+    if (infoEl) infoEl.textContent = sucursales.length + ' de ' + limiteSucursales + ' sucursales habilitadas';
     if (btnNueva) {
-      btnNueva.style.display = cantActual >= limiteSucursales ? 'none' : '';
-      btnNueva.onclick = () => abrirModalSucursalConfig();
+      btnNueva.style.display = sucursales.length >= limiteSucursales ? 'none' : '';
+      btnNueva.onclick = abrirModalSucursalConfig;
     }
-
     const lista = document.getElementById('sucursalesConfigList');
     if (!lista) return;
-
-    if (!sucursales.length) {
-      lista.innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:12px 0">Aún no tenés sucursales. Agregá la primera.</p>';
-      return;
-    }
-
+    if (!sucursales.length) { lista.innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:12px 0">Sin sucursales. Agregá la primera.</p>'; return; }
     lista.innerHTML = sucursales.map(s => {
       const link = location.origin + location.pathname + '?s=' + s.cod;
-      return `<div class="config-group" style="margin-bottom:10px;padding:12px;">
+      return `<div class="config-group" style="margin-bottom:10px;padding:12px;" id="suc-hdr-${s.id}">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
             <strong style="font-size:14px;">🏪 ${s.nombre}</strong>
-            <div style="font-size:11px;color:var(--text2);font-family:monospace;margin-top:2px">Código cajero: ${s.cod}</div>
+            <div style="font-size:11px;color:var(--text2);font-family:monospace;margin-top:2px">Cajero: ${s.cod}</div>
           </div>
-          <div style="display:flex;gap:2px;">
-            <button onclick="editarNombreSuc('${s.id}','${s.nombre}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px" title="Editar nombre">✏️</button>
+          <div style="display:flex;gap:4px;">
+            <button onclick="editarNombreSuc('${s.id}','${s.nombre}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px" title="Editar">✏️</button>
             <button onclick="eliminarSucursalConfig('${s.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--rojo);padding:4px" title="Eliminar">🗑️</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
-          <button onclick="copiarLink('${link}')" style="background:var(--surface);border:2px solid var(--borde);border-radius:8px;padding:9px;font-size:13px;cursor:pointer;">📋</button>
+          <button onclick="copiarLink('${link}')" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:9px;font-size:13px;cursor:pointer;">📋</button>
         </div>
       </div>`;
     }).join('');
-
   } catch(e) { logError('renderSucursalesConfig', e.message); }
 }
 
 function abrirModalSucursalConfig() {
-  // Reutiliza el modal de proveedor para pedir nombre
-  document.getElementById('provNombre').value = '';
-  // Crear un mini-formulario inline en vez de abrir el modal de prov
   const lista = document.getElementById('sucursalesConfigList');
-  const existe = document.getElementById('inlineNuevaSuc');
-  if (existe) { existe.remove(); return; }
+  if (!lista || document.getElementById('inlineNuevaSuc')) return;
   const div = document.createElement('div');
   div.id = 'inlineNuevaSuc';
   div.className = 'config-group';
   div.style.cssText = 'margin-bottom:10px;padding:12px;border-color:var(--accent)';
   div.innerHTML = `<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Nueva sucursal</label>
-    <input type="text" id="inlineNuevaSucNom" placeholder="Ej: Centro, Norte, Belgrano..." style="margin-bottom:8px">
+    <input type="text" id="inlineNuevaSucNom" placeholder="Ej: Centro, Norte..." style="margin-bottom:8px">
     <div style="display:flex;gap:8px">
       <button onclick="document.getElementById('inlineNuevaSuc').remove()" style="flex:1">Cancelar</button>
       <button onclick="guardarNuevaSucursalConfig()" class="btn-save" style="flex:2">Guardar</button>
     </div>`;
   lista.insertBefore(div, lista.firstChild);
-  document.getElementById('inlineNuevaSucNom').focus();
+  document.getElementById('inlineNuevaSucNom')?.focus();
+}
+
+function genCodigo() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r = ''; for (let i=0; i<6; i++) r += chars[Math.floor(Math.random()*chars.length)]; return r;
 }
 
 async function guardarNuevaSucursalConfig() {
   const uid = getUserDoc();
   const nombre = document.getElementById('inlineNuevaSucNom')?.value.trim();
   if (!nombre) { toast('Ingresá un nombre'); return; }
-  if (sucursales.length >= limiteSucursales) {
-    toast('Límite de ' + limiteSucursales + ' sucursales alcanzado'); return;
-  }
+  if (sucursales.length >= limiteSucursales) { toast('Límite de ' + limiteSucursales + ' sucursales alcanzado'); return; }
   try {
-    const cod = genCodigo6();
-    const ref = await db.collection('negocios').doc(uid).collection('sucursales').add({
-      nombre, activa: true, cod,
-      ts: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    const cod = genCodigo();
+    const ref = await db.collection('negocios').doc(uid).collection('sucursales').add({ nombre, activa: true, cod, ts: firebase.firestore.FieldValue.serverTimestamp() });
     await db.collection('carnearLinks').doc(cod).set({ uid, sucursalId: ref.id, nomSucursal: nombre });
-    toast('✅ Sucursal "' + nombre + '" creada');
+    toast('✅ Sucursal creada');
     document.getElementById('inlineNuevaSuc')?.remove();
     renderSucursalesConfig();
-  } catch(e) { logError('guardarNuevaSucursalConfig', e.message); toast('Error: ' + e.message); }
+  } catch(e) { logError('guardarNuevaSucursal', e.message); toast('Error: ' + e.message); }
 }
 
 async function eliminarSucursalConfig(id) {
-  if (!confirm('¿Eliminar esta sucursal? Se perderá el acceso del cajero.')) return;
   if (sucursales.length <= 1) { toast('Necesitás al menos una sucursal'); return; }
   const uid = getUserDoc();
   try {
@@ -2590,611 +2310,63 @@ async function eliminarSucursalConfig(id) {
     if (cod) await db.collection('carnearLinks').doc(cod).delete();
     toast('Sucursal eliminada');
     renderSucursalesConfig();
-  } catch(e) { logError('eliminarSucursalConfig', e.message); }
+  } catch(e) { logError('eliminarSucursal', e.message); }
 }
 
-// Limite de sucursales
-async function setLimiteSucursales(valor) {
-  const n = parseInt(valor) || 1;
-  limiteSucursales = n;
-  const uid = getUserDoc();
-  if (!uid) return;
-  try {
-    await db.collection('negocios').doc(uid).set({ limiteSucursales: n }, { merge: true });
-    toast('Límite: ' + n + ' sucursal' + (n > 1 ? 'es' : ''));
-  } catch(e) { logError('setLimiteSucursales', e.message); }
+function editarNombreSuc(id, nombreActual) {
+  const div = document.getElementById('suc-hdr-' + id);
+  if (!div) return;
+  const info = div.querySelector('div:first-child');
+  if (!info) return;
+  info.innerHTML = `<div style="display:flex;gap:6px;align-items:center;">
+    <input type="text" id="edit-suc-${id}" value="${nombreActual}" style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:6px;border:2px solid var(--accent);width:140px;">
+    <button onclick="guardarNombreSuc('${id}')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">✓</button>
+    <button onclick="renderSucursalesConfig()" style="background:var(--surface);border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;">✕</button>
+  </div>`;
+  document.getElementById('edit-suc-' + id)?.focus();
 }
 
-// Mostrar sucursales en features panel
-async function cargarAdminSucursales() {
+async function guardarNombreSuc(id) {
   const uid = getUserDoc();
-  if (!uid) return;
-  const lista = document.getElementById('adminSucList');
-  if (!lista) return;
+  const nombre = document.getElementById('edit-suc-' + id)?.value.trim();
+  if (!nombre) { toast('Ingresá un nombre'); return; }
   try {
-    const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
-    sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (!snap.docs.length) {
-      lista.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0">Sin sucursales adicionales configuradas</p>';
-      return;
-    }
-    lista.innerHTML = snap.docs.map(d => {
-      const s = { id: d.id, ...d.data() };
-      const link = location.origin + location.pathname + '?s=' + s.cod;
-      return `<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;">
-        <div style="font-size:13px;font-weight:700;">🏪 ${s.nombre}</div>
-        <div style="font-size:10px;color:var(--text2);font-family:monospace;margin:3px 0">Código cajero: ${s.cod}</div>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer">WA</button>
-          <button onclick="copiarLink('${link}')" style="font-size:11px;padding:5px 10px;border-radius:6px">📋 Copiar</button>
-          <button onclick="eliminarSucursal('${s.id}')" style="font-size:11px;padding:5px 10px;border-radius:6px;color:var(--rojo);border-color:var(--rojo)">🗑️</button>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { logError('cargarAdminSucursales', e.message); }
+    await db.collection('negocios').doc(uid).collection('sucursales').doc(id).update({ nombre });
+    const doc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
+    const cod = doc.data()?.cod;
+    if (cod) await db.collection('carnearLinks').doc(cod).update({ nomSucursal: nombre });
+    toast('Nombre actualizado');
+    renderSucursalesConfig();
+    if (sucursales.length > 1) verificarMultiSucursal();
+  } catch(e) { logError('guardarNombreSuc', e.message); toast('Error: ' + e.message); }
 }
 
 function enviarLinkWA(nombre, url) {
   const txt = '🥩 *CarneAR* — Acceso cajero: ' + nombre + '\n' + url;
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
+
 function copiarLink(url) {
-  navigator.clipboard?.writeText(url).then(() => toast('Link copiado ✓')).catch(() => toast('Copiá manualmente: ' + url));
+  navigator.clipboard?.writeText(url).then(() => toast('Link copiado ✓')).catch(() => toast('No se pudo copiar'));
 }
-
-function abrirModalSucursal() {
-  const uid = getUserDoc();
-  if (!uid) return;
-  if (sucursales.length >= limiteSucursales) {
-    toast('Límite de ' + limiteSucursales + ' sucursal' + (limiteSucursales > 1 ? 'es' : '') + ' alcanzado');
-    return;
-  }
-  // Usar el mismo sistema de PIN modal
-  const area = document.getElementById('featuresPanelArea');
-  const div = document.createElement('div');
-  div.className = 'features-panel';
-  div.style.marginTop = '12px';
-  div.innerHTML = `<h4 style="margin-bottom:10px">🏪 Nueva sucursal</h4>
-    <label>Nombre de la sucursal</label>
-    <input type="text" id="nuevaSucNombre" placeholder="Ej: Centro, Norte, Belgrano...">
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button onclick="this.closest('.features-panel').remove()" style="flex:1">Cancelar</button>
-      <button onclick="guardarNuevaSucursal()" class="btn-save" style="flex:2">Guardar</button>
-    </div>`;
-  area.appendChild(div);
-  document.getElementById('nuevaSucNombre')?.focus();
-}
-
-function genCodigo6() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let r = '';
-  for (let i = 0; i < 6; i++) r += chars[Math.floor(Math.random() * chars.length)];
-  return r;
-}
-
-async function guardarNuevaSucursal() {
-  const uid = getUserDoc();
-  const nombre = document.getElementById('nuevaSucNombre')?.value.trim();
-  if (!nombre) { toast('Ingresá un nombre'); return; }
-  try {
-    const cod = genCodigo6();
-    const ref = await db.collection('negocios').doc(uid).collection('sucursales').add({
-      nombre, activa: true, cod,
-      ts: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    await db.collection('carnearLinks').doc(cod).set({
-      uid, sucursalId: ref.id, nomSucursal: nombre
-    });
-    toast('Sucursal creada ✓');
-    document.querySelector('#featuresPanelArea .features-panel:last-child')?.remove();
-    cargarAdminSucursales();
-  } catch(e) { logError('guardarSucursal', e.message); toast('Error: ' + e.message); }
-}
-
-async function eliminarSucursal(id) {
-  if (!confirm('¿Eliminar esta sucursal?')) return;
-  const uid = getUserDoc();
-  try {
-    const doc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
-    const cod = doc.data()?.cod;
-    await db.collection('negocios').doc(uid).collection('sucursales').doc(id).delete();
-    if (cod) await db.collection('carnearLinks').doc(cod).delete();
-    toast('Sucursal eliminada');
-    cargarAdminSucursales();
-  } catch(e) { logError('eliminarSucursal', e.message); }
-}
-
 
   // SERVICE WORKER — P3 ROBUSTEZ
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/carneAr/sw-carnear.js')
       .catch(e => logError('sw', e));
   }
-
-
-// ══════════ WHATSAPP CONFIG ══════════
-var whatsappNumero = '';
-db.collection('negocios').doc(getUserDoc && getUserDoc() ? getUserDoc() : 'tmp').collection('config').doc('general').get().catch(function(){});
-// Cargar WA al iniciar sesión
-function cargarWhatsapp() {
-  var uid = getUserDoc();
-  if (!uid) return;
-  col('config').doc('general').get().then(function(doc) {
-    if (doc.exists && doc.data().whatsapp) {
-      whatsappNumero = doc.data().whatsapp;
-      var el = document.getElementById('cfgWhatsapp');
-      if (el) el.value = whatsappNumero;
-    }
-  });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  var btnWA = document.getElementById('guardarWhatsappBtn');
-  if (btnWA) {
-    btnWA.onclick = function() {
-      var num = document.getElementById('cfgWhatsapp').value.replace(/[^0-9]/g, '');
-      if (!num || num.length < 10) { toast('Número inválido. Formato: 5491112345678'); return; }
-      var uid = getUserDoc();
-      if (!uid) { toast('Iniciá sesión primero'); return; }
-      col('config').doc('general').set({ whatsapp: num }, { merge: true }).then(function() {
-        whatsappNumero = num;
-        toast('Número guardado ✓');
-      });
-    };
-  }
-
-  var btnCierre = document.getElementById('cierreBtn');
-  if (btnCierre) {
-    btnCierre.onclick = async function() {
-      var uid = getUserDoc();
-      if (!uid) { toast('Iniciá sesión primero'); return; }
-      if (!whatsappNumero) { toast('Configurá el número de WhatsApp en Configuración'); return; }
-
-      var hoy = new Date().toISOString().slice(0, 10);
-      var ventas = [];
-
-      if (estaOnline) {
-        var snap = await col('ventas')
-          .where('fechaDia', '==', hoy).get().catch(function(e) { logError('cierre', e.message); return { docs: [] }; });
-        ventas = snap.docs.map(function(d) { return d.data(); });
-      } else {
-        var pend = await idbGetAll('ventas_pendientes');
-        ventas = pend.filter(function(v) { return v.fechaDia === hoy; });
-      }
-
-      var totalGeneral = 0, totalEfectivo = 0, totalDebito = 0, totalTransferencia = 0;
-      var kgVacuna = 0, kgCerdo = 0, kgPollo = 0, kgOtros = 0;
-
-      ventas.forEach(function(v) {
-        var t = v.total || 0;
-        totalGeneral += t;
-        var m = v.metodo || v.metodoPago || '';
-        if (m === 'efectivo') totalEfectivo += t;
-        else if (m === 'debito') totalDebito += t;
-        else if (m === 'transferencia') totalTransferencia += t;
-
-        (v.items || []).forEach(function(it) {
-          var prod = productos.find(function(p) { return p.nombre === it.nombre; });
-          var cat = prod ? prod.categoria : 'Otros';
-          var tamano = (it.tamano || it.tamanoNombre || '');
-          var kg = tamano.indexOf('1/2') >= 0 ? 0.5 : 1;
-          var cant = it.cantidad || 1;
-          var totalKg = kg * cant;
-          if (cat === 'Vacuna') kgVacuna += totalKg;
-          else if (cat === 'Cerdo') kgCerdo += totalKg;
-          else if (cat === 'Pollo') kgPollo += totalKg;
-          else kgOtros += totalKg;
-        });
-      });
-
-      var r = function(n) { return Math.round(n * 100) / 100; };
-      var ahora = new Date();
-      var hora = ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-      var fecha = ahora.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-      var lineas = [
-        '🥩 *CarneAR — Cierre de caja*',
-        '📅 ' + fecha + ' | ⏰ ' + hora,
-        '──────────────────',
-        '💰 *Ingresos del turno*',
-        'Total: $' + totalGeneral.toLocaleString('es-AR'),
-        'Ventas: ' + ventas.length,
-        '',
-        '💵 Efectivo: $' + totalEfectivo.toLocaleString('es-AR'),
-        '💳 Débito: $' + totalDebito.toLocaleString('es-AR'),
-        '📲 Transferencia: $' + totalTransferencia.toLocaleString('es-AR'),
-        '──────────────────',
-        '⚖️ *Kilos vendidos*'
-      ];
-      if (kgVacuna > 0) lineas.push('🐄 Vacuna: ' + r(kgVacuna) + ' kg');
-      if (kgCerdo > 0)  lineas.push('🐷 Cerdo: ' + r(kgCerdo) + ' kg');
-      if (kgPollo > 0)  lineas.push('🍗 Pollo: ' + r(kgPollo) + ' kg');
-      if (kgOtros > 0)  lineas.push('📦 Otros: ' + r(kgOtros) + ' kg');
-      if (kgVacuna + kgCerdo + kgPollo + kgOtros === 0) lineas.push('Sin ventas registradas');
-      if (!estaOnline) { lineas.push('──────────────────'); lineas.push('⚠️ Offline — ventas pendientes de sincronizar'); }
-      lineas.push('──────────────────');
-      lineas.push('_CarneAR · raventechs.lat_');
-
-      var msg = lineas.join('\n');
-      document.getElementById('cierreResumen').textContent = msg;
-      var modal = document.getElementById('modalCierre');
-      modal.classList.add('show');
-      modal.dataset.msg = msg;
-      modal.dataset.totalGeneral = totalGeneral;
-    };
-  }
-
-  var btnCierreCancel = document.getElementById('cierreModalCancelBtn');
-  if (btnCierreCancel) btnCierreCancel.onclick = function() { document.getElementById('modalCierre').classList.remove('show'); };
-
-  var btnCierreConfirm = document.getElementById('cierreModalConfirmBtn');
-  if (btnCierreConfirm) {
-    btnCierreConfirm.onclick = async function() {
-      var modal = document.getElementById('modalCierre');
-      var uid = getUserDoc();
-      var cierreData = {
-        fechaDia: new Date().toISOString().slice(0, 10),
-        fechaISO: new Date().toISOString(),
-        totalGeneral: parseFloat(modal.dataset.totalGeneral) || 0
-      };
-      if (estaOnline && uid) {
-        await col('cierres')
-          .add(Object.assign({}, cierreData, { ts: firebase.firestore.FieldValue.serverTimestamp() }))
-          .catch(function(e) { logError('guardar-cierre', e.message); });
-      }
-      modal.classList.remove('show');
-      toast('✅ Cierre registrado');
-      window.open('https://wa.me/' + whatsappNumero + '?text=' + encodeURIComponent(modal.dataset.msg), '_blank');
-    };
-  }
-});
-
-// ══════════ OFFLINE-FIRST v1.5 ══════════
-var estaOnline = navigator.onLine;
-var IDB_NAME = 'carnear-offline';
-var IDB_VER = 1;
-var idb = null;
-
-function abrirIDB() {
-  return new Promise(function(res, rej) {
-    var req = indexedDB.open(IDB_NAME, IDB_VER);
-    req.onupgradeneeded = function(e) {
-      var d = e.target.result;
-      if (!d.objectStoreNames.contains('ventas_pendientes'))
-        d.createObjectStore('ventas_pendientes', { keyPath: 'localId', autoIncrement: true });
-    };
-    req.onsuccess = function(e) { idb = e.target.result; res(idb); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function idbAdd(store, obj) {
-  return new Promise(function(res, rej) {
-    var req = idb.transaction(store, 'readwrite').objectStore(store).add(obj);
-    req.onsuccess = function() { res(req.result); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function idbGetAll(store) {
-  return new Promise(function(res, rej) {
-    var req = idb.transaction(store, 'readonly').objectStore(store).getAll();
-    req.onsuccess = function() { res(req.result); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function idbDelete(store, key) {
-  return new Promise(function(res, rej) {
-    var req = idb.transaction(store, 'readwrite').objectStore(store).delete(key);
-    req.onsuccess = function() { res(); };
-    req.onerror = function(e) { rej(e); };
-  });
-}
-
-function actualizarBadge() {
-  if (!idb) return;
-  idbGetAll('ventas_pendientes').then(function(v) {
-    var total = v.length;
-    var box = document.getElementById('offlineBadgeBox');
-    var cnt = document.getElementById('offlineBadgeCount');
-    if (box) box.style.display = total > 0 ? '' : 'none';
-    if (cnt) cnt.textContent = total;
-  });
-}
-
-function sincronizarPendientes() {
-  if (!idb || !estaOnline) return;
-  var uid = getUserDoc();
-  if (!uid) return;
-  idbGetAll('ventas_pendientes').then(function(ventas) {
-    var i = 0;
-    function siguiente() {
-      if (i >= ventas.length) { actualizarBadge(); if (ventas.length > 0) toast('Ventas sincronizadas'); return; }
-      var v = ventas[i++];
-      var localId = v.localId;
-      var data = {};
-      for (var k in v) { if (k !== 'localId') data[k] = v[k]; }
-      data.fecha = firebase.firestore.FieldValue.serverTimestamp();
-      col('ventas').add(data)
-        .then(function() { return idbDelete('ventas_pendientes', localId); })
-        .then(siguiente)
-        .catch(function(e) { logError('sync', e.message); });
-    }
-    siguiente();
-  });
-}
-
-function actualizarEstadoConexion(online) {
-  estaOnline = online;
-  var banner = document.getElementById('offlineBanner');
-  if (banner) banner.style.display = online ? 'none' : 'block';
-  if (online) sincronizarPendientes();
-}
-
-window.addEventListener('online', function() { actualizarEstadoConexion(true); });
-window.addEventListener('offline', function() { actualizarEstadoConexion(false); });
-
-function initOffline() {
-  abrirIDB().then(function() {
-    actualizarEstadoConexion(navigator.onLine);
-    actualizarBadge();
-  }).catch(function(e) { console.error('IDB error:', e); });
-}
-
-
-// ══════════ BACKUP ESTÁNDAR CarneAR ══════════
-async function generarBackup(silencioso) {
-  var uid = getUserDoc ? getUserDoc() : null;
-  if (!uid) return;
-  try {
-    var ventasSnap = await col('ventas').get().catch(function(){return {docs:[]};});
-    var productosSnap = await db.collection('productos').get().catch(function(){return {docs:[]};});
-    var stockSnap = await db.collection('stock').get().catch(function(){return {docs:[]};});
-    var cierresSnap = await col('cierres').get().catch(function(){return {docs:[]};});
-    var configSnap = await db.collection('configuracion').doc('general').get().catch(function(){return {exists:false};});
-    var fecha = new Date().toISOString().slice(0,10);
-    var backup = {
-      app:'CarneAR', version:'1.5', fecha:new Date().toISOString(), uid:uid,
-      ventas: ventasSnap.docs.map(function(d){return Object.assign({_id:d.id},d.data());}),
-      productos: productosSnap.docs.map(function(d){return Object.assign({_id:d.id},d.data());}),
-      stock: stockSnap.docs.map(function(d){return Object.assign({_id:d.id},d.data());}),
-      cierres: cierresSnap.docs.map(function(d){return Object.assign({_id:d.id},d.data());}),
-      configuracion: configSnap.exists ? configSnap.data() : {}
-    };
-    var json = JSON.stringify(backup, null, 2);
-    localStorage.setItem('carnear-ultimo-backup', fecha);
-    var el = document.getElementById('ultimoBackupFecha'); if (el) el.textContent = fecha;
-    if (!silencioso) {
-      var blob = new Blob([json], {type:'application/json'});
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a'); a.href=url; a.download='carnear-backup-'+fecha+'.json'; a.click();
-      URL.revokeObjectURL(url); toast('✅ Backup descargado');
-    }
-  } catch(e) { console.error('Error backup:',e); if(!silencioso) toast('Error al generar backup'); }
-}
-
-async function restaurarBackup(input) {
-  var file = input.files[0]; if (!file) return;
-  var uid = getUserDoc ? getUserDoc() : null;
-  if (!uid) { toast('Iniciá sesión primero'); return; }
-  if (!confirm('Esto va a REEMPLAZAR todos tus datos con los del backup. ¿Continuar?')) { input.value=''; return; }
-  try {
-    var text = await file.text(); var backup = JSON.parse(text);
-    if (backup.app !== 'CarneAR') { toast('El archivo no es un backup de CarneAR'); return; }
-    toast('Restaurando datos...');
-    var batch = db.batch(); var count = 0;
-    (backup.ventas||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(col('ventas').doc(id),d);if(++count%400===0){batch.commit();batch=db.batch();}});
-    (backup.productos||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(db.collection('productos').doc(id),d);});
-    (backup.stock||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(db.collection('stock').doc(id),d);});
-    (backup.cierres||[]).forEach(function(v){var id=v._id;var d=Object.assign({},v);delete d._id;batch.set(col('cierres').doc(id),d);});
-    if(backup.configuracion&&Object.keys(backup.configuracion).length>0){batch.set(db.collection('configuracion').doc('general'),backup.configuracion,{merge:true});}
-    await batch.commit();
-    toast('✅ Backup restaurado'); input.value='';
-    setTimeout(function(){location.reload();},1500);
-  } catch(e) { toast('Error al restaurar: '+e.message); input.value=''; }
-}
-
-function chequearBackupDiario() {
-  var hoy = new Date().toISOString().slice(0,10);
-  var ultimo = localStorage.getItem('carnear-ultimo-backup');
-  var el = document.getElementById('ultimoBackupFecha'); if (el && ultimo) el.textContent = ultimo;
-  if (ultimo !== hoy) { setTimeout(function(){generarBackup(true);},5000); }
-}
-
-
-// ══ MÓDULO TICKET (Plus) ══════════════════════════
-let ticketItemsData = [];
-
-window.leerTicket = async function(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  // Mostrar preview
-  const reader = new FileReader();
-  reader.onload = e => {
-    const preview = document.getElementById('ticketPreview');
-    preview.src = e.target.result;
-    preview.classList.add('on');
-  };
-  reader.readAsDataURL(file);
-
-  // Leer imagen como base64
-  const base64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(new Error('Error al leer imagen'));
-    r.readAsDataURL(file);
-  });
-
-  const mediaType = file.type || 'image/jpeg';
-
-  // Llamar al Worker
-  document.getElementById('ticketLoading').style.display = 'block';
-  document.getElementById('ticketItems').innerHTML = '';
-  document.getElementById('btnCargarTicket').classList.remove('on');
-  ticketItemsData = [];
-
-  try {
-    const res = await fetch(TICKET_WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imagen: base64, mediaType })
-    });
-    const data = await res.json();
-
-    if (data.error) {
-      document.getElementById('ticketItems').innerHTML =
-        `<div style="color:var(--danger);text-align:center;padding:16px">${data.error}</div>`;
-      return;
-    }
-
-    ticketItemsData = data.items || [];
-    renderTicketItems(ticketItemsData, data.total);
-
-    if (ticketItemsData.length > 0) {
-      document.getElementById('btnCargarTicket').classList.add('on');
-    }
-  } catch(e) {
-    logError('leerTicket', e.message);
-    document.getElementById('ticketItems').innerHTML =
-      `<div style="color:var(--danger);text-align:center;padding:16px">Error al conectar con el servidor</div>`;
-  } finally {
-    document.getElementById('ticketLoading').style.display = 'none';
-  }
-};
-
-function renderTicketItems(items, total) {
-  const cont = document.getElementById('ticketItems');
-  if (!items.length) {
-    cont.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px">No se encontraron items en el ticket</div>';
-    return;
-  }
-  const html = items.map((item, idx) => `
-    <div class="ticket-item" id="ticket-row-${idx}">
-      <div style="flex:1;min-width:0">
-        <div class="ticket-item-desc" id="ticket-desc-${idx}">${item.descripcion}</div>
-        <div class="ticket-item-detail" id="ticket-detail-${idx}">${item.cantidad} ${item.unidad} × $${formatNum(item.precio_unitario)}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div class="ticket-item-precio" id="ticket-precio-${idx}">$${formatNum(item.subtotal)}</div>
-        <button onclick="editarItemTicket(${idx})" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:4px 8px;color:var(--muted);font-size:0.75rem;cursor:pointer">✏️</button>
-      </div>
-    </div>
-    <div id="ticket-edit-${idx}" style="display:none;background:var(--card);border:1px solid var(--accent);border-radius:10px;padding:12px;margin-bottom:8px">
-      <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px">${item.descripcion}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Cantidad (kg)</div>
-          <input type="number" step="0.001" id="edit-cant-${idx}" value="${item.cantidad}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:0.88rem">
-        </div>
-        <div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Precio/kg</div>
-          <input type="number" step="0.01" id="edit-precio-${idx}" value="${item.precio_unitario}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:0.88rem">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="confirmarEditTicket(${idx})" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px;font-size:0.82rem;font-weight:700;cursor:pointer">✅ OK</button>
-        <button onclick="eliminarItemTicket(${idx})" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;border-radius:8px;padding:8px;font-size:0.82rem;cursor:pointer">🗑</button>
-      </div>
-    </div>
-  `).join('');
-  const totalVal = ticketItemsData.reduce((s,i) => s + (i.subtotal||0), 0);
-  const totalHTML = `<div class="ticket-total"><span>TOTAL</span><span id="ticket-total-val">$${formatNum(totalVal)}</span></div>`;
-  cont.innerHTML = html + totalHTML;
-}
-
-window.editarItemTicket = function(idx) {
-  // Toggle edición
-  const editDiv = document.getElementById('ticket-edit-'+idx);
-  const isOpen  = editDiv.style.display !== 'none';
-  // Cerrar todos
-  ticketItemsData.forEach((_, i) => {
-    const d = document.getElementById('ticket-edit-'+i);
-    if (d) d.style.display = 'none';
-  });
-  if (!isOpen) editDiv.style.display = 'block';
-};
-
-window.confirmarEditTicket = function(idx) {
-  const cant   = parseFloat(document.getElementById('edit-cant-'+idx).value) || 0;
-  const precio = parseFloat(document.getElementById('edit-precio-'+idx).value) || 0;
-  ticketItemsData[idx].cantidad       = cant;
-  ticketItemsData[idx].precio_unitario = precio;
-  ticketItemsData[idx].subtotal        = Math.round(cant * precio * 100) / 100;
-  document.getElementById('ticket-edit-'+idx).style.display = 'none';
-  // Actualizar display
-  document.getElementById('ticket-detail-'+idx).textContent = cant + ' ' + (ticketItemsData[idx].unidad||'kg') + ' × $' + formatNum(precio);
-  document.getElementById('ticket-precio-'+idx).textContent = '$' + formatNum(ticketItemsData[idx].subtotal);
-  // Actualizar total
-  const totalVal = ticketItemsData.reduce((s,i) => s + (i.subtotal||0), 0);
-  const tv = document.getElementById('ticket-total-val');
-  if (tv) tv.textContent = '$' + formatNum(totalVal);
-};
-
-window.eliminarItemTicket = function(idx) {
-  ticketItemsData.splice(idx, 1);
-  renderTicketItems(ticketItemsData, null);
-  if (!ticketItemsData.length) document.getElementById('btnCargarTicket').classList.remove('on');
-};
-
-function formatNum(n) {
-  return (n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-window.cargarItemsTicket = async function() {
-  if (!ticketItemsData.length) { toast('No hay items para cargar'); return; }
-  const uid = getUserDoc();
-  if (!uid) { toast('Sesión expirada — volvé a entrar'); return; }
-  const btn = document.getElementById('btnCargarTicket');
-  btn.textContent = 'Cargando...'; btn.disabled = true;
-
-  try {
-    // Construir items en el mismo formato que las ventas normales de CarneAR
-    const items = ticketItemsData.map(item => ({
-      nombre:   item.descripcion,
-      tamano:   item.cantidad + ' ' + (item.unidad || 'kg'),
-      precio:   item.subtotal || 0,
-      cantidad: 1
-    }));
-    const total = ticketItemsData.reduce((s, i) => s + (i.subtotal || 0), 0);
-
-    await col('ventas').add({
-      items,
-      total,
-      metodo:     'efectivo',
-      fecha:      firebase.firestore.FieldValue.serverTimestamp(),
-      fechaLocal: new Date().toISOString(),
-      fechaDia:   new Date().toISOString().slice(0,10),
-      origen:     'ticket-scanner'
-    });
-    toast('✅ ' + ticketItemsData.length + ' items cargados desde ticket');
-    ticketItemsData = [];
-    document.getElementById('ticketPreview').classList.remove('on');
-    document.getElementById('ticketItems').innerHTML = '';
-    document.getElementById('btnCargarTicket').classList.remove('on');
-    document.getElementById('inputTicket').value = '';
-    switchTab('ventas');
-  } catch(e) {
-    logError('cargarItemsTicket', e.message);
-    toast('Error: ' + e.message);
-  } finally {
-    btn.textContent = '✅ Confirmar y cargar venta'; btn.disabled = false;
-  }
-};
-
 </script>
-<!-- MODAL CIERRE -->
-<div class="modal-overlay" id="modalCierre">
-  <div class="modal">
-    <h2 style="margin-bottom:8px;">🔒 Confirmar cierre de caja</h2>
-    <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;">Resumen que se enviará por WhatsApp:</p>
-    <div id="cierreResumen" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:12px;font-size:0.82rem;line-height:1.7;white-space:pre-wrap;font-family:monospace;max-height:280px;overflow-y:auto;"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;">
-      <button class="btn-cancel" id="cierreModalCancelBtn" style="flex:1;">Cancelar</button>
-      <button class="btn-save" id="cierreModalConfirmBtn" style="flex:1;">Cerrar y enviar WA</button>
+
+  <!-- MODAL RAVENTECHS -->
+  <div id="modalRaven" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;align-items:flex-end;justify-content:center;">
+    <div id="modalRavenInner" style="background:var(--surface);border-radius:20px 20px 0 0;padding:0 0 32px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;">
+      <div class="raven-hdr">
+        <h3>🦅 RavenTechs — Features Plus</h3>
+        <button class="btn-cerrar-modal" onclick="cerrarModalRaven()">✕</button>
+      </div>
+      <div id="ravenContent" style="padding:0 20px 8px"></div>
     </div>
   </div>
-</div>
+
 </body>
 </html>
