@@ -806,10 +806,12 @@ let isDark = localStorage.getItem('carnear-dark') === '1';
 function getTabsForRole() {
   // ── Cajero (acceso por link WhatsApp) ──────────────────────
   if (userRole === 'cajero') {
-    // Cajero: solo herramientas de venta
+    // Cajero/encargado: opera la sucursal completa
     const t = [
       {id:'caja',      icon:'🥩', label:'Caja'},
-      {id:'historial', icon:'📜', label:'Historial'}
+      {id:'menu',      icon:'📋', label:'Menú'},
+      {id:'historial', icon:'📜', label:'Historial'},
+      {id:'stock',     icon:'📦', label:'Stock'}
     ];
     if (features.gastos) t.push({id:'gastos', icon:'💸', label:'Gastos'});
     return t;
