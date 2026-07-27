@@ -1721,7 +1721,7 @@ async function loadHistorial(filter) {
     if(!ventas.length) { list.innerHTML='<div class="empty-state"><p>Sin ventas en este período</p></div>'; return; }
 
     list.innerHTML = ventas.map(v => {
-      const fecha = v._dia || (v.fecha ? v.fecha.toDate().toLocaleString('es-AR') : (v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
+      const fecha = v._dia || (v.fecha && v.fecha.toDate ? v.fecha.toDate().toLocaleString('es-AR') : v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
       const itemsStr = (v.items||[]).map(i=>`${i.nombre} (${i.tamano}) x${i.cantidad}`).join(', ');
       return `<div class="venta-card">
         <div class="venta-card-head"><span>${fecha}</span><span>${v.metodo==='efectivo'?'💵':'🏦'} ${v.metodo}</span></div>
