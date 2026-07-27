@@ -1945,39 +1945,6 @@ function handleLogoTap() {
   }
 }
 
-function showFeaturesPanel() {
-  const area = document.getElementById('featuresPanelArea');
-  area.classList.remove('hidden');
-
-  const makeToggle = (key, icon, label) => {
-    const checked = features[key] ? 'checked' : '';
-    return `<div class="feature-toggle">
-      <span>${icon} ${label}</span>
-      <label style="cursor:pointer;">
-        <input type="checkbox" ${checked} onchange="toggleFeature('${key}',this.checked)" style="width:auto;cursor:pointer;">
-        <span style="font-size:12px;color:var(--text2)">${features[key]?'Activo':'Inactivo'}</span>
-      </label>
-    </div>`;
-  };
-
-  area.innerHTML = `
-    <div class="features-panel">
-      <h3>🦅 RavenTechs — Features Plus</h3>
-      ${makeToggle('gastos','💸','Gastos')}
-      ${makeToggle('proveedores','🏭','Proveedores')}
-      <div class="feature-toggle">
-        <span>📱 Pedidos online</span>
-        <span class="text-sm">Próximamente</span>
-      </div>
-      <div class="feature-toggle">
-        <span>👥 Empleados</span>
-        <span class="text-sm">Próximamente</span>
-      </div>
-    </div>
-  `;
-  switchTab('config');
-  toast('Panel RavenTechs activado');
-}
 
 async function toggleFeature(key, value) {
   const uid = getUserDoc();
