@@ -1027,6 +1027,12 @@ function getUserDoc() {
 function col(name) {
   const uid = getUserDoc();
   if (!uid) return null;
+  // Catálogo siempre del principal (compartido entre sucursales)
+  const principalOnly = ['productos', 'insumos', 'proveedores'];
+  if (principalOnly.includes(name)) {
+    return db.collection('negocios').doc(uid).collection(name);
+  }
+  // Ventas, gastos: scoped por sucursal
   if (!currentSucursal || currentSucursal.id === 'principal') {
     return db.collection('negocios').doc(uid).collection(name);
   }
@@ -1216,7 +1222,7 @@ async function confirmarVenta() {
 
   try {
     // Save sale
-    await col('ventas').add({
+    await ventasCol.add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
       fechaLocal: new Date().toISOString()
@@ -2118,6 +2124,8 @@ function actualizarBotonesModoCaja() {
 async function registrarVentaRapida() {
   const uid = getUserDoc();
   if (!uid) return;
+  const ventasCol = col('ventas');
+  if (!ventasCol) { toast('Error: sin sesión activa'); return; }
   const monto = parseFloat(document.getElementById('vrMonto')?.value) || 0;
   if (monto <= 0) { toast('Ingresá un monto mayor a $0'); return; }
   const desc = document.getElementById('vrDesc')?.value.trim() || 'Venta directa';
@@ -2125,7 +2133,7 @@ async function registrarVentaRapida() {
   const ahora = new Date();
   const fechaDia = ahora.toISOString().slice(0,10);
   try {
-    await col('ventas').add({
+    await ventasCol.add({
       items: [{ nombre: desc, tamano: '', precio: monto, cantidad: 1 }],
       total: monto, metodo, fechaDia,
       fechaLocal: ahora.toISOString(),
