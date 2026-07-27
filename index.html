@@ -546,7 +546,8 @@
     <select id="cobrarMetodo">
       <option value="efectivo">💵 Efectivo</option>
       <option value="transferencia">🏦 Transferencia</option>
-    </select>
+    <option value="mercadopago">🔵 MercadoPago</option>
+        </select>
     <div class="btn-row">
       <button class="btn-cancel" id="cobrarCancelBtn">Cancelar</button>
       <button class="btn-save" id="cobrarConfirmBtn">✅ Confirmar venta</button>
@@ -583,7 +584,8 @@
     <select id="gastoMetodo">
       <option value="efectivo">💵 Efectivo</option>
       <option value="transferencia">🏦 Transferencia</option>
-    </select>
+    <option value="mercadopago">🔵 MercadoPago</option>
+        </select>
     <label>Proveedor (opcional)</label>
     <select id="gastoProv"><option value="">— Sin proveedor —</option></select>
     <div class="btn-row">
@@ -1286,7 +1288,7 @@ async function confirmarVenta() {
 
   try {
     // Save sale
-    await ventasCol.add({
+    await col('ventas').add({
       items, total, metodo,
       fecha: firebase.firestore.FieldValue.serverTimestamp(),
       fechaLocal: new Date().toISOString()
@@ -2218,7 +2220,7 @@ async function registrarVentaRapida() {
   const ahora = new Date();
   const fechaDia = ahora.toISOString().slice(0,10);
   try {
-    await ventasCol.add({
+    await col('ventas').add({
       items: [{ nombre: desc, tamano: '', precio: monto, cantidad: 1 }],
       total: monto, metodo, fechaDia,
       fechaLocal: ahora.toISOString(),
