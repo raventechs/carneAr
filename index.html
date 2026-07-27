@@ -1376,7 +1376,40 @@ function openCobrar() {
   document.getElementById('modalCobrar').classList.add('show');
 }
 
-async function confirmarVenta() {
+async 
+// ── Venta rápida por importe ─────────────────────────────────
+async function registrarVentaRapida() {
+  const uid = getUserDoc();
+  if (!uid) { showToast('Sin sesión activa'); return; }
+  const monto = parseFloat(document.getElementById('vrMonto')?.value) || 0;
+  if (monto <= 0) { showToast('Ingresá un monto mayor a $0'); return; }
+  const desc = document.getElementById('vrDesc')?.value.trim() || 'Venta directa';
+  const metodo = document.getElementById('vrMetodo')?.value || 'efectivo';
+  const ahora = new Date();
+  const fechaDia = ahora.toISOString().slice(0,10);
+  const venta = {
+    items: [{ nombre: desc, tamano: '', precio: monto, cantidad: 1 }],
+    total: monto,
+    metodo: metodo,
+    fechaDia: fechaDia,
+    fechaLocal: ahora.toISOString(),
+    sucursalId: currentSucursal?.id || 'principal',
+    ventaRapida: true,
+    uid: uid,
+    ts: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    await col('ventas').add(venta);
+    showToast('✅ $' + monto.toLocaleString('es-AR') + ' registrado');
+    const m = document.getElementById('vrMonto'); if(m) m.value = '';
+    const d = document.getElementById('vrDesc'); if(d) d.value = '';
+  } catch(e) {
+    logError('ventaRapida', e.message);
+    showToast('Error: ' + e.message);
+  }
+}
+
+function confirmarVenta() {
   const uid = getUserDoc();
   if(!uid) return;
   const total = carrito.reduce((s,c)=>s+c.precio*c.cantidad,0);
