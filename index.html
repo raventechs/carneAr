@@ -543,7 +543,7 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
   </div>
 
   <!-- REPORTES -->
-  <div class="section" id="sec-reportes">
+  <div class="section" id="sec-reportes" style="display:none!important">
     <h2>📊 Reportes del día</h2>
     <div id="reportCards"></div>
   </div>
@@ -576,7 +576,7 @@ button[class*="metodo"]:active, button[class*="pago"]:active {
 
   
 <!-- MÓDULO TICKET (Plus) -->
-<div class="section" id="sec-ticket">
+<div class="section" id="sec-ticket" style="display:none!important">
   <h3 style="margin-bottom:16px">📸 Escáner de ticket</h3>
   <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
     Sacale una foto al ticket de balanza y la IA carga los items automáticamente.
@@ -1269,6 +1269,74 @@ function actualizarBotonesModoCaja() {
   if(btn) btn.style.display = features.ticket ? '' : 'none';
 }
 
+
+// ── Escáner de Ticket (foto → IA) ─────────────────────────────
+const TICKET_WORKER_URL = 'https://dark-disk-07ec.rgaraventa.workers.dev';
+let ticketItemsBuffer = [];
+
+function leerTicket(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const preview = document.getElementById('ticketPreview');
+  const loading = document.getElementById('ticketLoading');
+  const itemsDiv = document.getElementById('ticketItems');
+  const btnCargar = document.getElementById('btnCargarTicket');
+  if(preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+  if(loading) loading.style.display = 'block';
+  if(itemsDiv) itemsDiv.innerHTML = '';
+  if(btnCargar) btnCargar.style.display = 'none';
+  ticketItemsBuffer = [];
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const res = await fetch(TICKET_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 })
+      });
+      const data = await res.json();
+      if(loading) loading.style.display = 'none';
+      if(data.items && data.items.length > 0) {
+        ticketItemsBuffer = data.items;
+        if(itemsDiv) itemsDiv.innerHTML = '<h4 style="margin-bottom:8px">Items detectados:</h4>' +
+          data.items.map((item,i) => `<div class="ticket-item-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);">
+            <span>${item.nombre}</span>
+            <strong>$${(item.total||item.precio||0).toLocaleString()}</strong>
+          </div>`).join('');
+        if(btnCargar) btnCargar.style.display = 'block';
+      } else {
+        if(itemsDiv) itemsDiv.innerHTML = '<p style="color:var(--text2);text-align:center;padding:12px">No se detectaron items.</p>';
+      }
+    } catch(err) {
+      if(loading) loading.style.display = 'none';
+      if(itemsDiv) itemsDiv.innerHTML = '<p style="color:var(--rojo)">Error al procesar el ticket.</p>';
+      logError('leerTicket', err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function cargarItemsTicket() {
+  if(!ticketItemsBuffer.length) { toast('No hay items para cargar'); return; }
+  ticketItemsBuffer.forEach(item => {
+    const nombre = item.nombre || 'Item ticket';
+    const precio = item.total || item.precio || 0;
+    if(precio > 0) {
+      carrito.push({ nombre, precio, cantidad: 1, tamanoNombre: 'ticket', id: 'ticket_'+Date.now()+Math.random() });
+    }
+  });
+  renderCarrito();
+  toast('✓ ' + ticketItemsBuffer.length + ' items cargados al carrito');
+  setCajaMode('catalogo');
+  ticketItemsBuffer = [];
+  const input = document.getElementById('inputTicket');
+  if(input) input.value = '';
+  const preview = document.getElementById('ticketPreview');
+  if(preview) { preview.src = ''; preview.style.display = 'none'; }
+}
+
 // ══════════ POS (CAJA) ══════════
 function renderPOS() {
   // Build group buttons
@@ -1380,9 +1448,9 @@ async
 // ── Venta rápida por importe ─────────────────────────────────
 async function registrarVentaRapida() {
   const uid = getUserDoc();
-  if (!uid) { showToast('Sin sesión activa'); return; }
+  if (!uid) { toast('Sin sesión activa'); return; }
   const monto = parseFloat(document.getElementById('vrMonto')?.value) || 0;
-  if (monto <= 0) { showToast('Ingresá un monto mayor a $0'); return; }
+  if (monto <= 0) { toast('Ingresá un monto mayor a $0'); return; }
   const desc = document.getElementById('vrDesc')?.value.trim() || 'Venta directa';
   const metodo = document.getElementById('vrMetodo')?.value || 'efectivo';
   const ahora = new Date();
@@ -1400,12 +1468,12 @@ async function registrarVentaRapida() {
   };
   try {
     await col('ventas').add(venta);
-    showToast('✅ $' + monto.toLocaleString('es-AR') + ' registrado');
+    toast('✅ $' + monto.toLocaleString('es-AR') + ' registrado');
     const m = document.getElementById('vrMonto'); if(m) m.value = '';
     const d = document.getElementById('vrDesc'); if(d) d.value = '';
   } catch(e) {
     logError('ventaRapida', e.message);
-    showToast('Error: ' + e.message);
+    toast('Error: ' + e.message);
   }
 }
 
@@ -2451,16 +2519,16 @@ async function guardarNombreSuc(id) {
   const uid = getUserDoc();
   const input = document.getElementById('edit-suc-' + id);
   const nuevoNombre = input?.value.trim();
-  if (!nuevoNombre) { showToast('Ingresá un nombre'); return; }
+  if (!nuevoNombre) { toast('Ingresá un nombre'); return; }
   try {
     await db.collection('negocios').doc(uid).collection('sucursales').doc(id).update({ nombre: nuevoNombre });
     const sucDoc = await db.collection('negocios').doc(uid).collection('sucursales').doc(id).get();
     const cod = sucDoc.data()?.cod;
     if (cod) await db.collection('carnearLinks').doc(cod).update({ nomSucursal: nuevoNombre });
-    showToast('Nombre actualizado');
+    toast('Nombre actualizado');
     renderSucursalesConfig();
     if (document.getElementById('sec-dashboard')?.classList.contains('active')) verificarMultiSucursal();
-  } catch(e) { showToast('Error: ' + e.message); }
+  } catch(e) { toast('Error: ' + e.message); }
 }
 
 async function renderSucursalesConfig() {
