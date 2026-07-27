@@ -1410,7 +1410,7 @@ async function registrarVentaRapida() {
   }
 }
 
-function confirmarVenta() {
+async function confirmarVenta() {
   const uid = getUserDoc();
   if(!uid) return;
   const total = carrito.reduce((s,c)=>s+c.precio*c.cantidad,0);
