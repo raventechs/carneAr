@@ -779,6 +779,7 @@ let currentSucursal = null; // {id, nombre} — null = modo principal
 let sucursales = [];
 let limiteSucursales = parseInt(localStorage.getItem('carnear_ls')) || 1;
 const _dashUnsubs = [];
+let enSucursal = false; // true cuando el dueño está dentro de una sucursal
 let productos = [];
 let insumos = [];
 let gastos = [];
@@ -801,27 +802,33 @@ let isDark = localStorage.getItem('carnear-dark') === '1';
 
 // ══════════ TABS CONFIG ══════════
 function getTabsForRole() {
-  if(userRole === 'cajero') {
+  // ── Cajero (acceso por link WhatsApp) ──────────────────────
+  if (userRole === 'cajero') {
     const t = [
-      {id:'caja',icon:'🥩',label:'Caja'},
-      {id:'menu',icon:'📋',label:'Menú'},
+      {id:'caja',    icon:'🥩', label:'Caja'},
+      {id:'menu',    icon:'📋', label:'Menú'},
       {id:'historial',icon:'📜',label:'Historial'},
-      {id:'stock',icon:'📦',label:'Stock'}
+      {id:'stock',   icon:'📦', label:'Stock'}
     ];
-    if(features.gastos) t.push({id:'gastos',icon:'💸',label:'Gastos'});
+    if (features.gastos) t.push({id:'gastos', icon:'💸', label:'Gastos'});
     return t;
   }
-  const tabs = [
-    {id:'inicio',icon:'🏠',label:'Inicio'},
-    {id:'caja',icon:'🥩',label:'Caja'},
-    {id:'menu',icon:'📋',label:'Menú'},
-    {id:'historial',icon:'📜',label:'Historial'},
-    {id:'stock',icon:'📦',label:'Stock'}
-  ];
-  if(features.gastos) tabs.push({id:'gastos',icon:'💸',label:'Gastos'});
-  if(features.proveedores) tabs.push({id:'proveedores',icon:'🏭',label:'Proveed.'});
-  tabs.push({id:'config',icon:'⚙️',label:'Config'});
-  return tabs;
+  // ── Dueño DENTRO de una sucursal (modo operativo) ──────────
+  if (userRole === 'dueno' && enSucursal) {
+    const t = [
+      {id:'caja',    icon:'🥩', label:'Caja'},
+      {id:'menu',    icon:'📋', label:'Menú'},
+      {id:'historial',icon:'📜',label:'Historial'},
+      {id:'stock',   icon:'📦', label:'Stock'}
+    ];
+    if (features.gastos) t.push({id:'gastos', icon:'💸', label:'Gastos'});
+    return t;
+  }
+  // ── Dueño en DASHBOARD (modo administrador) ─────────────────
+  const t = [{id:'inicio', icon:'🏠', label:'Inicio'}];
+  if (features.proveedores) t.push({id:'proveedores', icon:'🚚', label:'Prov.'});
+  t.push({id:'config', icon:'⚙️', label:'Config'});
+  return t;
 }
 
 // ══════════ INIT ══════════
@@ -2127,6 +2134,7 @@ function mostrarDashboard() {
 
 function entrarEnSucursal(suc) {
   _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
+  enSucursal = true;
   currentSucursal = suc;
   const titleEl = document.querySelector('.topbar-title');
   if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <small style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">— ${suc.nombre}</small>`;
@@ -2136,7 +2144,18 @@ function entrarEnSucursal(suc) {
     btn.id = 'btnVolverDash';
     btn.innerHTML = '←';
     btn.style.cssText = 'background:none;border:none;padding:4px 8px;font-size:18px;color:var(--accent);font-weight:700;cursor:pointer;';
-    btn.onclick = () => { currentSucursal = { id: 'principal', nombre: 'Principal' }; verificarMultiSucursal(); };
+    btn.onclick = () => {
+      enSucursal = false;
+      currentSucursal = { id: 'principal', nombre: 'Principal' };
+      // Restaurar título
+      const tEl = document.querySelector('.topbar-title');
+      if (tEl) tEl.innerHTML = 'Carne<span>AR</span>';
+      // Quitar botón volver
+      document.getElementById('btnVolverDash')?.remove();
+      // Renderizar tabs de dashboard y mostrar
+      renderTabs(getTabsForRole());
+      verificarMultiSucursal();
+    };
     topLeft.insertBefore(btn, topLeft.firstChild);
   }
   userRole = 'dueno';
@@ -2240,7 +2259,20 @@ async function setLimiteSucursales(valor) {
 async function renderSucursalesConfig() {
   const grupo = document.getElementById('sucursalesConfigGroup');
   if (!grupo) return;
-  if (limiteSucursales <= 1) { grupo.classList.add('hidden'); return; }
+  // Mostrar si hay sucursales creadas O si limiteSucursales > 1
+  if (sucursales.length === 0 && limiteSucursales <= 1) {
+    grupo.classList.add('hidden');
+    // Intentar cargar sucursales primero
+    const uid2 = getUserDoc();
+    if (uid2) {
+      db.collection('negocios').doc(uid2).collection('sucursales').get()
+        .then(snap => {
+          sucursales = snap.docs.map(d => ({id:d.id,...d.data()}));
+          if (sucursales.length > 0) { grupo.classList.remove('hidden'); renderSucursalesConfig(); }
+        }).catch(() => {});
+    }
+    return;
+  }
   grupo.classList.remove('hidden');
   const uid = getUserDoc();
   if (!uid) return;
