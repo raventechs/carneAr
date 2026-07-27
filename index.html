@@ -1038,11 +1038,27 @@ function switchTab(id) {
   const sec = document.getElementById('sec-'+id);
   if(sec) sec.classList.add('active');
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-  if(id==='reportes') loadReportes();
+  if(id==='caja') { renderPOS(); actualizarBotonesModoCaja(); setCajaMode('catalogo'); }
   if(id==='historial') loadHistorial('hoy');
-  if(id==='inicio') loadDashboard();
+  if(id==='inicio') {
+    if (enSucursal || userRole === 'cajero') loadDashboard();
+    else if (limiteSucursales > 1 && sucursales.length > 1) mostrarDashboard();
+    else loadDashboard();
+  }
   if(id==='gastos') loadGastos('hoy');
   if(id==='proveedores') renderProveedores();
+  if(id==='config') {
+    const uid2 = getUserDoc();
+    if (uid2) {
+      db.collection('negocios').doc(uid2).get()
+        .then(doc => {
+          if (doc.exists) {
+            if (doc.data().limiteSucursales) limiteSucursales = doc.data().limiteSucursales;
+          }
+          renderSucursalesConfig();
+        }).catch(() => renderSucursalesConfig());
+    } else renderSucursalesConfig();
+  }
 }
 
 // ══════════ DATA SUBSCRIPTIONS ══════════
@@ -1673,17 +1689,26 @@ async function loadHistorial(filter) {
   }
 
   try {
-    const snap = await col('ventas')
-      .where('fecha','>=',desde).where('fecha','<=',hasta)
-      .orderBy('fecha','desc').get();
+    // Query por ts sin compound index, filtramos client-side por fechaDia
+    const snap = await col('ventas').orderBy('ts','desc').limit(500).get();
+
+    const desdeDia = desde.toISOString().slice(0,10);
+    const hastaDia = hasta.toISOString().slice(0,10);
 
     let totalV = 0, totalI = 0;
     const ventas = [];
     snap.forEach(doc => {
       const v = doc.data();
+      // Aceptar fechaDia (string) o fecha (Timestamp)
+      let dia = v.fechaDia;
+      if (!dia && v.fecha) {
+        dia = v.fecha.toDate ? v.fecha.toDate().toISOString().slice(0,10) : String(v.fecha).slice(0,10);
+      }
+      if (!dia && v.fechaLocal) dia = v.fechaLocal.slice(0,10);
+      if (!dia || dia < desdeDia || dia > hastaDia) return;
       totalV++;
       totalI += v.total||0;
-      ventas.push(v);
+      ventas.push({...v, _dia: dia});
     });
 
     document.getElementById('historialSummary').innerHTML = `
@@ -1696,7 +1721,7 @@ async function loadHistorial(filter) {
     if(!ventas.length) { list.innerHTML='<div class="empty-state"><p>Sin ventas en este período</p></div>'; return; }
 
     list.innerHTML = ventas.map(v => {
-      const fecha = v.fecha ? v.fecha.toDate().toLocaleString('es-AR') : (v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
+      const fecha = v._dia || (v.fecha ? v.fecha.toDate().toLocaleString('es-AR') : (v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
       const itemsStr = (v.items||[]).map(i=>`${i.nombre} (${i.tamano}) x${i.cantidad}`).join(', ');
       return `<div class="venta-card">
         <div class="venta-card-head"><span>${fecha}</span><span>${v.metodo==='efectivo'?'💵':'🏦'} ${v.metodo}</span></div>
