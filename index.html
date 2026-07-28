@@ -444,6 +444,16 @@
         <button class="btn-cobrar" id="cartCobrarBtn">Cobrar</button>
       </div>
     </div>
+
+    <!-- CIERRE DE CAJA -->
+    <div class="config-group" style="margin:12px;">
+      <h3>🔒 Cierre de caja</h3>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Genera el resumen del turno. La caja sigue operativa.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-warning" style="flex:1;min-width:140px" onclick="verResumenCierre()">📤 Ver resumen</button>
+        <button style="flex:1;min-width:140px;background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;" onclick="enviarResumenWA()">📲 Cerrar por WhatsApp</button>
+      </div>
+    </div>
   </div>
 
   <!-- MENÚ -->
@@ -2199,6 +2209,50 @@ function entrarEnSucursal(suc) {
   renderTabs(getTabsForRole());
   subscribeData();
   switchTab('caja');
+}
+
+
+// ══ CIERRE DE CAJA (resumen + WhatsApp) ═══════════════════════
+async function obtenerVentasHoy() {
+  const hoy = new Date().toISOString().slice(0,10);
+  try {
+    const snap = await col('ventas').orderBy('ts','desc').limit(300).get();
+    const lista = [];
+    snap.forEach(doc => {
+      const v = doc.data();
+      const dia = v.fechaDia || (v.fecha && v.fecha.toDate ? v.fecha.toDate().toISOString().slice(0,10) : (v.fechaLocal ? v.fechaLocal.slice(0,10) : null));
+      if (dia === hoy) lista.push(v);
+    });
+    return lista;
+  } catch(e) { logError('obtenerVentasHoy', e.message); return []; }
+}
+
+function generarResumenCierre(ventas) {
+  const hoy = new Date().toLocaleDateString('es-AR');
+  const total = ventas.reduce((s,v) => s + (v.total||0), 0);
+  const desglose = {};
+  ventas.forEach(v => {
+    const m = v.metodo || 'efectivo';
+    desglose[m] = (desglose[m]||0) + (v.total||0);
+  });
+  const nombreLabels = { efectivo:'💵 Efectivo', transferencia:'📲 Transferencia', tarjeta:'💳 Tarjeta', mercadopago:'🔵 MercadoPago' };
+  const desgloseTxt = Object.entries(desglose)
+    .map(([k,v]) => `  • ${nombreLabels[k]||k}: $${v.toLocaleString('es-AR')}`)
+    .join('\n');
+  const sucNombre = currentSucursal?.nombre || 'Principal';
+  return `🥩 *CarnéAR — Cierre de Caja*\n📅 ${hoy} | 🏪 ${sucNombre}\n\n🔢 Ventas: ${ventas.length}\n💰 Total: $${total.toLocaleString('es-AR')}\n\n📊 Desglose:\n${desgloseTxt}`;
+}
+
+async function verResumenCierre() {
+  const ventas = await obtenerVentasHoy();
+  if (!ventas.length) { toast('No hay ventas hoy'); return; }
+  alert(generarResumenCierre(ventas).replace(/\*/g,''));
+}
+
+async function enviarResumenWA() {
+  const ventas = await obtenerVentasHoy();
+  if (!ventas.length) { toast('No hay ventas hoy'); return; }
+  window.open('https://wa.me/?text=' + encodeURIComponent(generarResumenCierre(ventas)), '_blank');
 }
 
 // ══ CAJA MODES ═══════════════════════════════════════════════
