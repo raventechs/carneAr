@@ -540,6 +540,16 @@
   </div>
 </div>
 
+
+  <!-- CUENTA INACTIVA -->
+  <div class="section" id="sec-inactivo" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:32px 24px;">
+    <div style="font-size:56px;margin-bottom:16px">🔒</div>
+    <h2 style="color:var(--accent);margin-bottom:10px">Cuenta inactiva</h2>
+    <p style="color:var(--text2);font-size:0.9rem;line-height:1.6;max-width:300px;margin-bottom:24px">Tu cuenta está desactivada. Contactá a RavenTechs para activarla o renovar tu suscripción.</p>
+    <a href="https://wa.me/5491123456789?text=Hola%20RavenTechs%2C%20necesito%20reactivar%20mi%20cuenta%20de%20CarnéAR" target="_blank" style="display:inline-block;background:#25D366;color:#fff;padding:13px 24px;border-radius:10px;font-weight:700;font-size:0.95rem;text-decoration:none;margin-bottom:12px">📲 Contactar por WhatsApp</a>
+    <button onclick="auth.signOut()" style="background:none;border:1px solid var(--borde);border-radius:10px;padding:10px 20px;font-size:0.85rem;color:var(--text2);cursor:pointer;">Cerrar sesión</button>
+  </div>
+
 <!-- BOTTOM NAV -->
 <div class="mob-nav hidden" id="mobNav"></div>
 
@@ -863,12 +873,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (user && !user.isAnonymous) {
         if (appRunning && currentUser && currentUser.uid === user.uid) return;
         appRunning = true;
-        currentUser = user;
-        userRole = 'dueno';
-        currentSucursal = { id: 'principal', nombre: 'Principal' };
-        initApp();
-        const delay = limiteSucursales > 1 ? 0 : 600;
-        setTimeout(() => verificarMultiSucursal(), delay);
+        // Verificar cliente y cargar sus features
+        cargarCliente(user);
+        return; // cargarCliente llama initApp() internamente
       } else if (user && user.isAnonymous && _codigoLink) {
         iniciarCajeroLink(_codigoLink);
       } else if (user && user.isAnonymous && !_codigoLink) {
@@ -2212,6 +2219,155 @@ function entrarEnSucursal(suc) {
 }
 
 
+
+// ══ SISTEMA DE CLIENTES ══════════════════════════════════════
+const ADMIN_EMAIL = 'rgaraventa@gmail.com';
+let clienteActual = null;
+
+const PLANES = {
+  basico:  { nombre:'Básico',     features:{gastos:false,ticket:false,proveedores:false}, limiteSucursales:1 },
+  pro:     { nombre:'Pro',        features:{gastos:true, ticket:true, proveedores:false}, limiteSucursales:3 },
+  full:    { nombre:'Full',       features:{gastos:true, ticket:true, proveedores:true},  limiteSucursales:99 }
+};
+
+function esAdmin(email) {
+  return email === ADMIN_EMAIL;
+}
+
+function mostrarInactivo() {
+  document.getElementById('loading').style.display = 'none';
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  const sec = document.getElementById('sec-inactivo');
+  if (sec) sec.style.display = 'flex';
+}
+
+async function cargarCliente(user) {
+  const email = user.email;
+
+  // Admin siempre pasa sin restricciones
+  if (esAdmin(email)) {
+    currentUser = user;
+    userRole = 'dueno';
+    currentSucursal = { id: 'principal', nombre: 'Principal' };
+    initApp();
+    const delay = limiteSucursales > 1 ? 0 : 600;
+    setTimeout(() => verificarMultiSucursal(), delay);
+    return;
+  }
+
+  try {
+    // Buscar o crear cliente
+    const clienteRef = db.collection('clientes').doc(email);
+    let clienteSnap = await clienteRef.get();
+
+    if (!clienteSnap.exists) {
+      // Primera vez: crear plan básico automáticamente
+      const basicoData = {
+        email,
+        nombre: user.displayName || email.split('@')[0],
+        plan: 'basico',
+        activo: true,
+        features: PLANES.basico.features,
+        limiteSucursales: 1,
+        creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await clienteRef.set(basicoData);
+      clienteSnap = { data: () => basicoData, exists: true };
+      console.log('Cliente nuevo creado con plan básico:', email);
+    }
+
+    const datos = clienteSnap.data();
+    clienteActual = datos;
+
+    // Verificar cuenta activa
+    if (!datos.activo) {
+      mostrarInactivo();
+      return;
+    }
+
+    // Aplicar features del cliente (no del negocio)
+    features = Object.assign(features, datos.features || {});
+    limiteSucursales = datos.limiteSucursales || 1;
+    localStorage.setItem('carnear_ls', limiteSucursales);
+
+    currentUser = user;
+    userRole = 'dueno';
+    currentSucursal = { id: 'principal', nombre: 'Principal' };
+    initApp();
+    if (limiteSucursales > 1) setTimeout(() => verificarMultiSucursal(), 0);
+
+  } catch(e) {
+    logError('cargarCliente', e.message);
+    // Si falla la verificación, dar acceso básico como fallback
+    features = PLANES.basico.features;
+    limiteSucursales = 1;
+    currentUser = user;
+    userRole = 'dueno';
+    currentSucursal = { id: 'principal', nombre: 'Principal' };
+    initApp();
+  }
+}
+
+// ══ GESTIÓN DE CLIENTES (solo admin - panel PIN 2580) ═════════
+async function cargarMisClientes() {
+  const lista = document.getElementById('misClientesList');
+  if (!lista) return;
+  try {
+    const snap = await db.collection('clientes').orderBy('creadoEn','desc').get();
+    if (snap.empty) {
+      lista.innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:12px">Sin clientes registrados aún.</p>';
+      return;
+    }
+    lista.innerHTML = snap.docs.map(d => {
+      const cl = d.data();
+      const planNom = PLANES[cl.plan]?.nombre || cl.plan;
+      const estadoBadge = cl.activo
+        ? '<span style="background:rgba(39,174,96,.12);color:#27ae60;font-size:10px;padding:2px 8px;border-radius:10px">● Activo</span>'
+        : '<span style="background:rgba(239,68,68,.12);color:#ef4444;font-size:10px;padding:2px 8px;border-radius:10px">● Inactivo</span>';
+      return `<div class="config-group" style="margin-bottom:8px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;">${cl.nombre||cl.email}</div>
+            <div style="font-size:11px;color:var(--text2);">${cl.email}</div>
+          </div>
+          ${estadoBadge}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <select onchange="cambiarPlan('${d.id}',this.value)" style="flex:1;font-size:12px;padding:6px;">
+            <option value="basico" ${cl.plan==='basico'?'selected':''}>Básico — 1 suc</option>
+            <option value="pro"    ${cl.plan==='pro'?'selected':''}>Pro — 3 suc</option>
+            <option value="full"   ${cl.plan==='full'?'selected':''}>Full — ilimitado</option>
+          </select>
+          <button onclick="toggleCliente('${d.id}', ${!cl.activo})" style="font-size:11px;padding:6px 10px;border-radius:6px;${cl.activo?'background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);':'background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3);'} cursor:pointer;">${cl.activo?'🚫 Desactivar':'✅ Activar'}</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { logError('cargarMisClientes', e.message); }
+}
+
+async function cambiarPlan(email, nuevoPlan) {
+  const plan = PLANES[nuevoPlan];
+  if (!plan) return;
+  try {
+    await db.collection('clientes').doc(email).update({
+      plan: nuevoPlan,
+      features: plan.features,
+      limiteSucursales: plan.limiteSucursales
+    });
+    toast('Plan actualizado: ' + plan.nombre);
+    cargarMisClientes();
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function toggleCliente(email, nuevoEstado) {
+  try {
+    await db.collection('clientes').doc(email).update({ activo: nuevoEstado });
+    toast(nuevoEstado ? 'Cliente activado' : 'Cliente desactivado');
+    cargarMisClientes();
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+
 // ══ CIERRE DE CAJA (resumen + WhatsApp) ═══════════════════════
 async function obtenerVentasHoy() {
   const hoy = new Date().toISOString().slice(0,10);
@@ -2315,6 +2471,11 @@ function showFeaturesPanel() {
       ${makeToggle('gastos','💸','Gastos')}
       ${makeToggle('proveedores','🏭','Proveedores')}
       ${makeToggle('ticket','📸','Escáner de tickets')}
+      ${currentUser?.email === ADMIN_EMAIL ? `
+      <div style="margin-top:14px;border-top:1px solid var(--borde);padding-top:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">👥 Mis clientes</div>
+        <div id="misClientesList"><p style="font-size:13px;color:var(--text2);text-align:center">Cargando...</p></div>
+      </div>` : ''}
       <div class="feature-toggle">
         <span>🏪 Multi-sucursal <span style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px">PLUS</span></span>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -2330,6 +2491,8 @@ function showFeaturesPanel() {
   modal.onclick = e => { if(e.target===modal) cerrarModalRaven(); };
   const limEl = document.getElementById('inputLimSuc');
   if (limEl) limEl.value = limiteSucursales;
+  // Cargar clientes si es admin
+  if (currentUser?.email === ADMIN_EMAIL) setTimeout(cargarMisClientes, 100);
 }
 
 function cerrarModalRaven() { document.getElementById('modalRaven').style.display = 'none'; }
