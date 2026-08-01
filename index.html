@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.5
-  Fecha de esta versión: 2026-07-26
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.6
+  Fecha de esta versión: 2026-08-01
+  - v2.6 (01/08/2026): Seguridad — sanitizar() anti-XSS, App Check SDK preparado.
   Cambios respecto a v1.2: Gastos y Proveedores como features
   plus (bloqueados por defecto, se activan desde panel RavenTechs
   5 toques + PIN 2580). Gastos: CRUD completo con filtro
@@ -652,6 +653,7 @@
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -666,6 +668,11 @@ const firebaseConfig = {
   appId: "1:982486541527:web:9a7db609c7a983fc3dbc92"
 };
 firebase.initializeApp(firebaseConfig);
+var APPCHECK_KEY = '';
+if (APPCHECK_KEY && typeof firebase.appCheck === 'function') {
+  firebase.appCheck().activate(
+    new firebase.appCheck.ReCaptchaV3Provider(APPCHECK_KEY), true);
+}
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -1082,6 +1089,16 @@ function switchTab(id) {
   }
 }
 
+// ══════════ SEGURIDAD ══════════
+function sanitizar(txt) {
+  return String(txt || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ══════════ DATA SUBSCRIPTIONS ══════════
 function getUserDoc() {
   return ownerUid || (currentUser ? currentUser.uid : null);
@@ -1218,7 +1235,7 @@ function renderPOS() {
     const btn = document.createElement('button');
     btn.className = 'pos-item';
     const minPrice = p.tamanos && p.tamanos.length ? Math.min(...p.tamanos.map(t=>t.precio)) : 0;
-    btn.innerHTML = `${p.nombre}<div class="price">$${minPrice.toLocaleString()}</div>`;
+    btn.innerHTML = `${sanitizar(p.nombre)}<div class="price">$${minPrice.toLocaleString()}</div>`;
     btn.onclick = () => selectProduct(p);
     grid.appendChild(btn);
   });
@@ -1235,10 +1252,10 @@ function selectProduct(p) {
   } else {
     // Show size selector
     const box = document.getElementById('sizeSelectBox');
-    box.innerHTML = `<h3>${p.nombre}</h3>`;
+    box.innerHTML = `<h3>${sanitizar(p.nombre)}</h3>`;
     p.tamanos.forEach(t => {
       const btn = document.createElement('button');
-      btn.innerHTML = `${t.nombre} <span class="s-price">$${t.precio.toLocaleString()}</span>`;
+      btn.innerHTML = `${sanitizar(t.nombre)} <span class="s-price">$${t.precio.toLocaleString()}</span>`;
       btn.onclick = () => {
         addToCart(p, t);
         document.getElementById('sizeSelectOverlay').classList.remove('show');
@@ -1272,7 +1289,7 @@ function renderCart() {
 
   list.innerHTML = carrito.map((c,i) => `
     <div class="cart-item">
-      <div>${c.nombre} (${c.tamanoNombre}) x${c.cantidad}</div>
+      <div>${sanitizar(c.nombre)} (${sanitizar(c.tamanoNombre)}) x${c.cantidad}</div>
       <div>
         $${(c.precio*c.cantidad).toLocaleString()}
         <button onclick="changeQty(${i},-1)">−</button>
@@ -1349,7 +1366,7 @@ function renderMenu() {
   list.innerHTML = productos.map(p => {
     const sizes = (p.tamanos||[]).map(t=>`<span>${t.nombre}: $${t.precio.toLocaleString()}</span>`).join('');
     return `<div class="menu-item">
-      <div class="menu-item-head"><h3>${p.nombre}</h3><span class="badge-cat">${p.categoria}</span></div>
+      <div class="menu-item-head"><h3>${sanitizar(p.nombre)}</h3><span class="badge-cat">${sanitizar(p.categoria)}</span></div>
       <div class="menu-item-sizes">${sizes}</div>
       <div class="menu-item-actions">
         <button onclick="openProductModal('${p.id}')">✏️ Editar</button>
@@ -1373,7 +1390,7 @@ function openProductModal(id) {
   let sizesHTML = '';
   tamanos.forEach((t,i) => {
     const recipeRows = (recetaPorTamano[t.nombre]||[]).map((r,ri) => {
-      const insumoOpts = insumos.map(ins => `<option value="${ins.id}" ${ins.id===r.insumoId?'selected':''}>${ins.nombre}</option>`).join('');
+      const insumoOpts = insumos.map(ins => `<option value="${ins.id}" ${ins.id===r.insumoId?'selected':''}>${sanitizar(ins.nombre)}</option>`).join('');
       return `<div class="recipe-row" data-size="${i}" data-ri="${ri}">
         <select class="recipe-insumo">${insumoOpts}</select>
         <input type="number" class="recipe-cant" value="${r.cantidad}" min="0.1" step="0.1" style="width:60px">
@@ -1384,7 +1401,7 @@ function openProductModal(id) {
     sizesHTML += `<div class="size-block" data-si="${i}">
       <div class="size-block-head"><strong>Tamaño ${i+1}</strong>${tamanos.length>1?`<button class="btn-rm-size" onclick="this.closest('.size-block').remove()">Quitar</button>`:''}</div>
       <div class="size-row">
-        <input type="text" class="size-nombre" placeholder="Nombre (ej: 1 Kg)" value="${t.nombre}">
+        <input type="text" class="size-nombre" placeholder="Nombre (ej: 1 Kg)" value="${sanitizar(t.nombre)}">
         <input type="number" class="size-precio" placeholder="Precio" value="${t.precio}" min="0">
       </div>
       <div class="recipe-area">
@@ -1501,7 +1518,7 @@ function renderStock() {
     const isLow = ins.umbral && ins.cantidad <= ins.umbral;
     return `<div class="stock-item ${isLow?'low':''}">
       <div class="stock-info">
-        <h4>${ins.nombre} ${isLow?'⚠️':''}</h4>
+        <h4>${sanitizar(ins.nombre)} ${isLow?'⚠️':''}</h4>
         <p>${ins.cantidad} ${ins.unidad||'u'} ${ins.umbral ? '(alerta: '+ins.umbral+')' : ''}</p>
       </div>
       <div class="stock-actions">
@@ -1659,8 +1676,8 @@ async function loadDashboard() {
     alertaDiv.innerHTML = `<div style="background:rgba(192,57,43,.08);border:2px solid var(--rojo);border-radius:var(--radius);padding:12px;margin-bottom:4px;">
       <h3 style="font-size:14px;color:var(--rojo);margin-bottom:8px;">⚠️ Stock bajo (${alertas.length})</h3>
       ${alertas.map(a => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(192,57,43,.15);">
-        <span>${a.nombre}</span>
-        <span style="font-weight:700;color:var(--rojo)">${a.cantidad} ${a.unidad||'u'} (mín: ${a.umbral})</span>
+        <span>${sanitizar(a.nombre)}</span>
+        <span style="font-weight:700;color:var(--rojo)">${a.cantidad} ${sanitizar(a.unidad||'u')} (mín: ${a.umbral})</span>
       </div>`).join('')}
     </div>`;
   } else {
@@ -1751,7 +1768,7 @@ async function loadHistorial(filter) {
 
     list.innerHTML = ventas.map(v => {
       const fecha = v._dia || (v.fecha && v.fecha.toDate ? v.fecha.toDate().toLocaleString('es-AR') : v.fechaLocal ? new Date(v.fechaLocal).toLocaleString('es-AR') : '');
-      const itemsStr = (v.items||[]).map(i=>`${i.nombre} (${i.tamano}) x${i.cantidad}`).join(', ');
+      const itemsStr = (v.items||[]).map(i=>`${sanitizar(i.nombre)} (${sanitizar(i.tamano)}) x${i.cantidad}`).join(', ');
       return `<div class="venta-card">
         <div class="venta-card-head"><span>${fecha}</span><span>${v.metodo==='efectivo'?'💵':'🏦'} ${v.metodo}</span></div>
         <div class="venta-card-items">${itemsStr}</div>
@@ -1832,7 +1849,7 @@ function openGastoModal(id) {
   const sel = document.getElementById('gastoProv');
   sel.innerHTML = '<option value="">— Sin proveedor —</option>';
   proveedores.forEach(p => {
-    sel.innerHTML += `<option value="${p.id}" ${g&&g.proveedorId===p.id?'selected':''}>${p.nombre}</option>`;
+    sel.innerHTML += `<option value="${p.id}" ${g&&g.proveedorId===p.id?'selected':''}>${sanitizar(p.nombre)}</option>`;
   });
 
   document.getElementById('modalGasto').classList.add('show');
@@ -1922,7 +1939,7 @@ async function loadGastos(filter) {
           <span>${fecha}</span>
           <span>${g.metodo==='efectivo'?'💵':'🏦'} ${g.metodo}</span>
         </div>
-        <div class="venta-card-items">${g.descripcion}${g.proveedorNombre?' — 🏭 '+g.proveedorNombre:''}</div>
+        <div class="venta-card-items">${sanitizar(g.descripcion)}${g.proveedorNombre?' — 🏭 '+sanitizar(g.proveedorNombre):''}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
           <span class="venta-card-total" style="color:var(--rojo)">-$${(g.monto||0).toLocaleString()}</span>
           <div>
@@ -1987,9 +2004,9 @@ function renderProveedores() {
 
   list.innerHTML = proveedores.map(p => `
     <div class="menu-item">
-      <div class="menu-item-head"><h3>${p.nombre}</h3>${p.rubro?`<span class="badge-cat">${p.rubro}</span>`:''}</div>
-      ${p.telefono?`<p class="text-sm" style="margin-top:4px;">📞 ${p.telefono}</p>`:''}
-      ${p.notas?`<p class="text-sm">${p.notas}</p>`:''}
+      <div class="menu-item-head"><h3>${sanitizar(p.nombre)}</h3>${p.rubro?`<span class="badge-cat">${sanitizar(p.rubro)}</span>`:''}</div>
+      ${p.telefono?`<p class="text-sm" style="margin-top:4px;">📞 ${sanitizar(p.telefono)}</p>`:''}
+      ${p.notas?`<p class="text-sm">${sanitizar(p.notas)}</p>`:''}
       <div class="menu-item-actions">
         <button onclick="openProvModal('${p.id}')">✏️ Editar</button>
         <button onclick="deleteProveedor('${p.id}')" style="color:var(--rojo)">🗑️ Eliminar</button>
@@ -2159,7 +2176,7 @@ function mostrarDashboard() {
     totales[suc.id] = 0;
     const card = document.createElement('div');
     card.className = 'suc-card';
-    card.innerHTML = `<div class="suc-card-nom">🏪 ${suc.nombre}</div>
+    card.innerHTML = `<div class="suc-card-nom">🏪 ${sanitizar(suc.nombre)}</div>
       <div class="suc-card-lbl">Ventas hoy</div>
       <div class="suc-card-val" id="sv-${suc.id}">$0</div>
       <span class="badge-activa">${suc.activa !== false ? '● Activa' : '● Inactiva'}</span>`;
@@ -2191,7 +2208,7 @@ function entrarEnSucursal(suc) {
   enSucursal = true;
   currentSucursal = suc;
   const titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <small style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">— ${suc.nombre}</small>`;
+  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <small style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">— ${sanitizar(suc.nombre)}</small>`;
   const topLeft = document.querySelector('.topbar-left');
   if (topLeft && !document.getElementById('btnVolverDash')) {
     const btn = document.createElement('button');
@@ -2327,7 +2344,7 @@ async function cargarMisClientes() {
       return `<div class="config-group" style="margin-bottom:8px;padding:12px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <div>
-            <div style="font-size:14px;font-weight:700;">${cl.nombre||cl.email}</div>
+            <div style="font-size:14px;font-weight:700;">${sanitizar(cl.nombre||cl.email)}</div>
             <div style="font-size:11px;color:var(--text2);">${cl.email}</div>
           </div>
           ${estadoBadge}
@@ -2548,16 +2565,16 @@ async function renderSucursalesConfig() {
       return `<div class="config-group" style="margin-bottom:10px;padding:12px;" id="suc-hdr-${s.id}">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <strong style="font-size:14px;">🏪 ${s.nombre}</strong>
-            <div style="font-size:11px;color:var(--text2);font-family:monospace;margin-top:2px">Cajero: ${s.cod}</div>
+            <strong style="font-size:14px;">🏪 ${sanitizar(s.nombre)}</strong>
+            <div style="font-size:11px;color:var(--text2);font-family:monospace;margin-top:2px">Cajero: ${sanitizar(s.cod)}</div>
           </div>
           <div style="display:flex;gap:4px;">
-            <button onclick="editarNombreSuc('${s.id}','${s.nombre}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px" title="Editar">✏️</button>
+            <button onclick="editarNombreSuc('${s.id}','${sanitizar(s.nombre)}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px" title="Editar">✏️</button>
             <button onclick="eliminarSucursalConfig('${s.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--rojo);padding:4px" title="Eliminar">🗑️</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
+          <button onclick="enviarLinkWA('${sanitizar(s.nombre)}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
           <button onclick="copiarLink('${link}')" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:9px;font-size:13px;cursor:pointer;">📋</button>
         </div>
       </div>`;
@@ -2621,7 +2638,7 @@ function editarNombreSuc(id, nombreActual) {
   const info = div.querySelector('div:first-child');
   if (!info) return;
   info.innerHTML = `<div style="display:flex;gap:6px;align-items:center;">
-    <input type="text" id="edit-suc-${id}" value="${nombreActual}" style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:6px;border:2px solid var(--accent);width:140px;">
+    <input type="text" id="edit-suc-${id}" value="${sanitizar(nombreActual)}" style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:6px;border:2px solid var(--accent);width:140px;">
     <button onclick="guardarNombreSuc('${id}')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">✓</button>
     <button onclick="renderSucursalesConfig()" style="background:var(--surface);border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;">✕</button>
   </div>`;
