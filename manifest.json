@@ -3,7 +3,7 @@
   "short_name": "CarneAR",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFAFA",
+  "background_color": "#FFFFFF",
   "theme_color": "#C0392B",
   "lang": "es",
   "icons": [
