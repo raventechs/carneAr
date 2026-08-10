@@ -2373,13 +2373,21 @@ async function cargarMisClientes() {
           </div>
           ${estadoBadge}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
           <select onchange="cambiarPlan('${d.id}',this.value)" style="flex:1;font-size:12px;padding:6px;">
             <option value="basico" ${cl.plan==='basico'?'selected':''}>Básico — 1 suc</option>
             <option value="pro"    ${cl.plan==='pro'?'selected':''}>Pro — 3 suc</option>
             <option value="full"   ${cl.plan==='full'?'selected':''}>Full — ilimitado</option>
           </select>
           <button onclick="toggleCliente('${d.id}', ${!cl.activo})" style="font-size:11px;padding:6px 10px;border-radius:6px;${cl.activo?'background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);':'background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3);'} cursor:pointer;">${cl.activo?'🚫 Desactivar':'✅ Activar'}</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 2px;">
+          ${[['gastos','💸 Gastos'],['ticket','📸 Ticket IA'],['proveedores','🏭 Proveedores']].map(([k,lbl])=>`
+            <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(0,0,0,.04);padding:4px 8px;border-radius:6px;">
+              <input type="checkbox" ${cl.features&&cl.features[k]?'checked':''} onchange="toggleFeatureCliente('${d.id}',this,'${k}',this.checked)" style="cursor:pointer;width:auto;">
+              ${lbl}
+            </label>
+          `).join('')}
         </div>
       </div>`;
     }).join('');
@@ -2406,6 +2414,18 @@ async function toggleCliente(email, nuevoEstado) {
     toast(nuevoEstado ? 'Cliente activado' : 'Cliente desactivado');
     cargarMisClientes();
   } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function toggleFeatureCliente(email, checkbox, key, value) {
+  try {
+    await db.collection('clientes').doc(email).update({
+      [`features.${key}`]: value
+    });
+    toast(`${key}: ${value ? '✅ activado' : '❌ desactivado'}`);
+  } catch(e) {
+    checkbox.checked = !value;
+    toast('Error: ' + e.message);
+  }
 }
 
 
