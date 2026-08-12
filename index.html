@@ -22,7 +22,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CarnéAR</title>
+  <title>CarneAR</title>
 <meta name="theme-color" content="#C0392B">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -327,7 +327,7 @@ var __rtPWA = (function() {
           <path d="M70,17 Q85,25 89,41" stroke="#e05050" stroke-width="5" stroke-linecap="round" fill="none" opacity=".3"/>
         </svg>
   </div>
-  <div class="loader-text">CarnéAR</div>
+  <div class="loader-text">CarneAR</div>
   <div class="loader-sub">Preparando el mostrador…</div>
 </div>
 
@@ -353,7 +353,7 @@ var __rtPWA = (function() {
           <path d="M70,17 Q85,25 89,41" stroke="#e05050" stroke-width="5" stroke-linecap="round" fill="none" opacity=".3"/>
         </svg>
     </div>
-    <h1>Carné<span>AR</span></h1>
+    <h1>Carne<span>AR</span></h1>
     <p>Caja registradora para carnicerías</p>
 
     <div id="loginFormFields">
@@ -379,7 +379,7 @@ var __rtPWA = (function() {
 <div id="app">
   <header class="topbar">
     <div class="topbar-left">
-      <button id="logoBtn" aria-label="CarnéAR">
+      <button id="logoBtn" aria-label="CarneAR">
         <svg class="topbar-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <ellipse cx="50" cy="52" rx="38" ry="28" fill="#8B0000" stroke="#5a0000" stroke-width="3"/>
           <ellipse cx="42" cy="47" rx="10" ry="6" fill="#B22222" opacity=".7"/>
@@ -387,7 +387,7 @@ var __rtPWA = (function() {
           <path d="M22 38 Q18 30 24 26 L30 30 Q26 33 24 38Z" fill="#F5F5DC" stroke="#ccc" stroke-width="1.5"/>
         </svg>
       </button>
-      <span class="topbar-title">Carné<span>AR</span></span>
+      <span class="topbar-title">Carne<span>AR</span></span>
     </div>
     <div class="topbar-right">
       <button id="themeBtn">🌙</button>
@@ -587,7 +587,7 @@ var __rtPWA = (function() {
     <div style="font-size:56px;margin-bottom:16px">🔒</div>
     <h2 style="color:var(--accent);margin-bottom:10px">Cuenta inactiva</h2>
     <p style="color:var(--text2);font-size:0.9rem;line-height:1.6;max-width:300px;margin-bottom:24px">Tu cuenta está desactivada. Contactá a RavenTechs para activarla o renovar tu suscripción.</p>
-    <a href="https://wa.me/5491136547592?text=Hola%20RavenTechs%2C%20necesito%20reactivar%20mi%20cuenta%20de%20CarnéAR" target="_blank" style="display:inline-block;background:#25D366;color:#fff;padding:13px 24px;border-radius:10px;font-weight:700;font-size:0.95rem;text-decoration:none;margin-bottom:12px">📲 Contactar por WhatsApp</a>
+    <a href="https://wa.me/5491136547592?text=Hola%20RavenTechs%2C%20necesito%20reactivar%20mi%20cuenta%20de%20CarneAR" target="_blank" style="display:inline-block;background:#25D366;color:#fff;padding:13px 24px;border-radius:10px;font-weight:700;font-size:0.95rem;text-decoration:none;margin-bottom:12px">📲 Contactar por WhatsApp</a>
     <button onclick="auth.signOut()" style="background:none;border:1px solid var(--borde);border-radius:10px;padding:10px 20px;font-size:0.85rem;color:var(--text2);cursor:pointer;">Cerrar sesión</button>
   </div>
 
@@ -2457,7 +2457,7 @@ function generarResumenCierre(ventas) {
     .map(([k,v]) => `  • ${nombreLabels[k]||k}: $${v.toLocaleString('es-AR')}`)
     .join('\n');
   const sucNombre = currentSucursal?.nombre || 'Principal';
-  return `🥩 *CarnéAR — Cierre de Caja*\n📅 ${hoy} | 🏪 ${sucNombre}\n\n🔢 Ventas: ${ventas.length}\n💰 Total: $${total.toLocaleString('es-AR')}\n\n📊 Desglose:\n${desgloseTxt}`;
+  return `🥩 *CarneAR — Cierre de Caja*\n📅 ${hoy} | 🏪 ${sucNombre}\n\n🔢 Ventas: ${ventas.length}\n💰 Total: $${total.toLocaleString('es-AR')}\n\n📊 Desglose:\n${desgloseTxt}`;
 }
 
 async function verResumenCierre() {
