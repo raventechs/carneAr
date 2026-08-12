@@ -915,7 +915,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appRunning && currentUser && currentUser.uid === user.uid) return;
         appRunning = true;
         // Verificar cliente y cargar sus features
-        cargarCliente(user);
+        cargarCliente(user).then(() => {
+          // Atajo: ?admin=1 en la URL abre el panel directo si es el admin
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('admin') === '1' && esAdmin(user.email)) {
+            showFeaturesPanel();
+          }
+        });
         return; // cargarCliente llama initApp() internamente
       } else if (user && user.isAnonymous && _codigoLink) {
         iniciarCajeroLink(_codigoLink);
