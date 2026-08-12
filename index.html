@@ -2721,7 +2721,7 @@ function copiarLink(url) {
 
   // SERVICE WORKER — P3 ROBUSTEZ
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/carneAr/sw-carnear.js')
+    navigator.serviceWorker.register('/sw-carnear.js')
       .catch(e => logError('sw', e));
   }
 </script>
