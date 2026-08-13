@@ -34,13 +34,29 @@
       --borde: #e0e0e0; --accent: #8B0000; --accent2: #B22222;
       --verde: #27ae60; --naranja: #e67e22; --rojo: #c0392b;
       --sombra: 0 2px 8px rgba(0,0,0,.08);
-      --radius: 10px;
+      --radius: 18px;
     }
     .dark {
       --bg: #121212; --surface: #1e1e1e; --text: #e0e0e0; --text2: #aaa;
       --borde: #333; --sombra: 0 2px 8px rgba(0,0,0,.3);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(139,0,0,.10) 0%, transparent 50%),
+        radial-gradient(circle at 88% 20%, rgba(0,0,0,.04) 0%, transparent 40%),
+        radial-gradient(circle at 80% 85%, rgba(139,0,0,.09) 0%, transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(139,0,0,.05) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+    body.dark {
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(178,34,34,.16) 0%, transparent 50%),
+        radial-gradient(circle at 88% 20%, rgba(178,34,34,.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 85%, rgba(178,34,34,.13) 0%, transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(178,34,34,.08) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition: background .3s, color .3s; }
     button { cursor:pointer; border:2px solid var(--borde); background:var(--surface); color:var(--text); border-radius:var(--radius); padding:10px 16px; font-size:14px; transition:all .2s; }
     button:active { transform:scale(.96); }
@@ -105,7 +121,7 @@
     .cart h3 { font-size:15px; margin-bottom:8px; }
     .cart-item { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--borde); font-size:13px; }
     .cart-item:last-child { border:none; }
-    .cart-item button { padding:4px 8px; font-size:11px; border-radius:6px; }
+    .cart-item button { padding:4px 8px; font-size:11px; border-radius:10px; }
     .cart-total { font-size:18px; font-weight:700; text-align:right; margin-top:8px; color:var(--accent); }
     .cart-actions { display:flex; gap:8px; margin-top:10px; }
     .cart-actions button { flex:1; font-weight:600; }
@@ -117,7 +133,7 @@
     .menu-item-head { display:flex; justify-content:space-between; align-items:center; }
     .menu-item-head h3 { font-size:15px; }
     .menu-item-sizes { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-    .menu-item-sizes span { background:var(--bg); padding:3px 8px; border-radius:6px; font-size:12px; }
+    .menu-item-sizes span { background:var(--bg); padding:3px 8px; border-radius:10px; font-size:12px; }
     .menu-item-actions { display:flex; gap:6px; margin-top:8px; }
     .menu-item-actions button { font-size:12px; padding:5px 10px; }
 
@@ -134,7 +150,7 @@
     .btn-delete { background:var(--rojo); color:#fff; border-color:var(--rojo); }
 
     /* ══ SIZE BLOCKS ══ */
-    .size-block { background:var(--bg); border:1px solid var(--borde); border-radius:8px; padding:10px; margin-bottom:8px; }
+    .size-block { background:var(--bg); border:1px solid var(--borde); border-radius:12px; padding:10px; margin-bottom:8px; }
     .size-block-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
     .size-block-head strong { font-size:13px; }
     .size-row { display:flex; gap:6px; margin-bottom:6px; }
@@ -216,7 +232,7 @@
     .pin-box button { width:100%; }
 
     /* ══ TOAST ══ */
-    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:8px; font-size:13px; z-index:700; opacity:0; transition:opacity .3s; pointer-events:none; }
+    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:12px; font-size:13px; z-index:700; opacity:0; transition:opacity .3s; pointer-events:none; }
     .toast.show { opacity:1; }
 
     /* ══ SIZE SELECT MODAL (for POS) ══ */
@@ -403,11 +419,11 @@ var __rtPWA = (function() {
       <div style="font-size:12px;opacity:.8">Bienvenido/a,</div>
       <div id="dashNombre" style="font-size:20px;font-weight:700;margin:4px 0 12px"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
+        <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:10px">
           <div style="font-size:10px;opacity:.8">Ventas hoy (total)</div>
           <div id="dashTotalHoy" style="font-size:18px;font-weight:700">$0</div>
         </div>
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:10px">
+        <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:10px">
           <div style="font-size:10px;opacity:.8">Sucursales activas</div>
           <div id="dashActivas" style="font-size:18px;font-weight:700">0</div>
         </div>
@@ -492,7 +508,7 @@ var __rtPWA = (function() {
       <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Genera el resumen del turno. La caja sigue operativa.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-warning" style="flex:1;min-width:140px" onclick="verResumenCierre()">📤 Ver resumen</button>
-        <button style="flex:1;min-width:140px;background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;" onclick="enviarResumenWA()">📲 Cerrar por WhatsApp</button>
+        <button style="flex:1;min-width:140px;background:#25D366;color:#fff;border:none;border-radius:12px;padding:10px;font-weight:700;cursor:pointer;" onclick="enviarResumenWA()">📲 Cerrar por WhatsApp</button>
       </div>
     </div>
   </div>
@@ -2385,11 +2401,11 @@ async function cargarMisClientes() {
             <option value="pro"    ${cl.plan==='pro'?'selected':''}>Pro — 3 suc</option>
             <option value="full"   ${cl.plan==='full'?'selected':''}>Full — ilimitado</option>
           </select>
-          <button onclick="toggleCliente('${d.id}', ${!cl.activo})" style="font-size:11px;padding:6px 10px;border-radius:6px;${cl.activo?'background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);':'background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3);'} cursor:pointer;">${cl.activo?'🚫 Desactivar':'✅ Activar'}</button>
+          <button onclick="toggleCliente('${d.id}', ${!cl.activo})" style="font-size:11px;padding:6px 10px;border-radius:10px;${cl.activo?'background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);':'background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3);'} cursor:pointer;">${cl.activo?'🚫 Desactivar':'✅ Activar'}</button>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 2px;">
           ${[['gastos','💸 Gastos'],['ticket','📸 Ticket IA'],['proveedores','🏭 Proveedores']].map(([k,lbl])=>`
-            <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(0,0,0,.04);padding:4px 8px;border-radius:6px;">
+            <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;background:rgba(0,0,0,.04);padding:4px 8px;border-radius:10px;">
               <input type="checkbox" ${cl.features&&cl.features[k]?'checked':''} onchange="toggleFeatureCliente('${d.id}',this,'${k}',this.checked)" style="cursor:pointer;width:auto;">
               ${lbl}
             </label>
@@ -2624,8 +2640,8 @@ async function renderSucursalesConfig() {
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
-          <button onclick="copiarLink('${link}')" style="background:var(--surface);border:1px solid var(--borde);border-radius:8px;padding:9px;font-size:13px;cursor:pointer;">📋</button>
+          <button onclick="enviarLinkWA('${s.nombre}','${link}')" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:12px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;">📲 Invitar cajero</button>
+          <button onclick="copiarLink('${link}')" style="background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:9px;font-size:13px;cursor:pointer;">📋</button>
         </div>
       </div>`;
     }).join('');
@@ -2688,9 +2704,9 @@ function editarNombreSuc(id, nombreActual) {
   const info = div.querySelector('div:first-child');
   if (!info) return;
   info.innerHTML = `<div style="display:flex;gap:6px;align-items:center;">
-    <input type="text" id="edit-suc-${id}" value="${nombreActual}" style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:6px;border:2px solid var(--accent);width:140px;">
-    <button onclick="guardarNombreSuc('${id}')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">✓</button>
-    <button onclick="renderSucursalesConfig()" style="background:var(--surface);border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;">✕</button>
+    <input type="text" id="edit-suc-${id}" value="${nombreActual}" style="font-size:14px;font-weight:600;padding:4px 8px;border-radius:10px;border:2px solid var(--accent);width:140px;">
+    <button onclick="guardarNombreSuc('${id}')" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">✓</button>
+    <button onclick="renderSucursalesConfig()" style="background:var(--surface);border:1px solid var(--borde);border-radius:10px;padding:5px 8px;font-size:12px;cursor:pointer;">✕</button>
   </div>`;
   document.getElementById('edit-suc-' + id)?.focus();
 }
