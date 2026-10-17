@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.5
-  Fecha de esta versión: 2026-07-26
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.6
+  Fecha de esta versión: 2026-10-17
+  v2.6: MODO PRÁCTICA (Config → 🎓 Modo Práctica): carga una carnicería de mentira con 3 sucursales,
+  7 días de ventas, gastos y proveedores marcados _demo; un botón los quita sin tocar datos reales.
   Cambios respecto a v1.2: Gastos y Proveedores como features
   plus (bloqueados por defecto, se activan desde panel RavenTechs
   5 toques + PIN 2580). Gastos: CRUD completo con filtro
@@ -581,6 +583,12 @@ var __rtPWA = (function() {
       <button class="btn-warning" id="configCleanDupBtn">🧹 Limpiar duplicados</button>
     </div>
     <div class="config-group">
+      <h3>🎓 Modo Práctica</h3>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Carga una carnicería de ejemplo con 3 sucursales, ventas de la última semana, gastos y proveedores. Sirve para aprender o mostrar la app. Los datos de práctica se pueden quitar con un botón sin tocar los tuyos.</p>
+      <button class="btn-warning" id="configPracticaBtn">🎓 Cargar empresa de práctica</button>
+      <button class="btn-danger" id="configPracticaQuitarBtn">🧽 Quitar datos de práctica</button>
+    </div>
+    <div class="config-group">
       <h3>Cuenta</h3>
       <button class="btn-danger" id="configLogoutBtn">🚪 Cerrar sesión</button>
     </div>
@@ -983,6 +991,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Config
   document.getElementById('configResetBtn').onclick = restablecerCatalogo;
+  document.getElementById('configPracticaBtn').onclick = cargarPractica;
+  document.getElementById('configPracticaQuitarBtn').onclick = quitarPractica;
   document.getElementById('configCleanDupBtn').onclick = limpiarDuplicados;
 
   // Gastos
@@ -2729,6 +2739,89 @@ async function guardarNombreSuc(id) {
     renderSucursalesConfig();
     if (sucursales.length > 1) verificarMultiSucursal();
   } catch(e) { logError('guardarNombreSuc', e.message); toast('Error: ' + e.message); }
+}
+
+
+// ══════════ MODO PRÁCTICA (v2.6) ══════════
+// Todo lo que se crea acá lleva _demo:true y se puede quitar sin tocar datos reales.
+const PRACTICA_SUCS = ['Carnicería Centro', 'Sucursal Norte', 'Sucursal Sur'];
+const _rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+async function _commitOps(ops) {
+  for (let i=0; i<ops.length; i+=400) {
+    const b = db.batch();
+    ops.slice(i,i+400).forEach(([ref,data]) => data === null ? b.delete(ref) : b.set(ref,data));
+    await b.commit();
+  }
+}
+function _ventaPractica(dia, escala) {
+  const n = _rnd(3,6), items = [];
+  for (let k=0; k<n; k++) {
+    const p = CATALOGO_EJEMPLO[_rnd(0,CATALOGO_EJEMPLO.length-1)], t = p.tamanos[_rnd(0,p.tamanos.length-1)];
+    items.push({nombre:p.nombre, tamano:t.nombre, precio:t.precio, cantidad:_rnd(1,2)});
+  }
+  const total = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+  const r = Math.random(), metodo = r<0.55 ? 'efectivo' : (r<0.8 ? 'mercadopago' : 'transferencia');
+  const f = new Date(dia); f.setHours(_rnd(9,20), _rnd(0,59), _rnd(0,59));
+  return {items, total, metodo, fechaDia:f.toISOString().slice(0,10), fecha:firebase.firestore.Timestamp.fromDate(f), fechaLocal:f.toISOString(), ts:firebase.firestore.Timestamp.fromDate(f), uid:getUserDoc(), _demo:true};
+}
+async function cargarPractica() {
+  const uid = getUserDoc(); if (!uid) return;
+  if (!confirm('Se carga una carnicería de práctica: 3 sucursales, ventas de 7 días, gastos y proveedores de mentira. Podés quitarlos después. ¿Seguir?')) return;
+  try {
+    const base = db.collection('negocios').doc(uid);
+    const ya = await base.collection('sucursales').where('_demo','==',true).get();
+    if (!ya.empty) { toast('Ya hay una práctica cargada. Quitala primero.'); return; }
+    toast('Cargando práctica…');
+    const ops = [];
+    if (!productos.length) CATALOGO_EJEMPLO.forEach(p => ops.push([base.collection('productos').doc(), {nombre:p.nombre,categoria:p.categoria,tamanos:p.tamanos,recetaPorTamano:{},_demo:true}]));
+    const provs = [['Frigorífico Don Aníbal','Carne vacuna'],['Granja Los Pinos','Pollo y cerdo'],['Distribuidora Bebidas Sur','Bebidas']];
+    const provRefs = provs.map(([nombre,rubro]) => { const r = base.collection('proveedores').doc(); ops.push([r,{nombre,telefono:'11 5555-'+_rnd(1000,9999),rubro,notas:'Proveedor de práctica',_demo:true}]); return {id:r.id,nombre}; });
+    const puntos = [{ref:base, nom:'Principal', escala:1.4, link:null}];
+    for (const nom of PRACTICA_SUCS) {
+      const cod = genCodigo(), r = base.collection('sucursales').doc();
+      ops.push([r,{nombre:nom,activa:true,cod,ts:firebase.firestore.FieldValue.serverTimestamp(),_demo:true}]);
+      ops.push([db.collection('carnearLinks').doc(cod),{uid,sucursalId:r.id,nomSucursal:nom,_demo:true}]);
+      puntos.push({ref:r, nom, escala:1, link:cod});
+    }
+    const hoy = new Date();
+    for (const pt of puntos) {
+      for (let d=0; d<7; d++) {
+        const dia = new Date(hoy); dia.setDate(hoy.getDate()-d);
+        const cant = Math.round(_rnd(16,26)*pt.escala);
+        for (let k=0; k<cant; k++) ops.push([pt.ref.collection('ventas').doc(), _ventaPractica(dia)]);
+      }
+      const gs = [['Compra de hacienda',850000,0],['Alquiler del local',400000,1],['Luz y gas',65000,3],['Bolsas y packaging',38000,5]];
+      gs.forEach(([descripcion,monto,dAtras]) => {
+        const f = new Date(hoy); f.setDate(hoy.getDate()-dAtras); f.setHours(10,0,0);
+        const pv = provRefs[_rnd(0,provRefs.length-1)];
+        ops.push([pt.ref.collection('gastos').doc(), {descripcion,monto:Math.round(monto*pt.escala),metodo:'transferencia',proveedorId:pv.id,proveedorNombre:pv.nombre,fecha:firebase.firestore.Timestamp.fromDate(f),fechaLocal:f.toISOString(),_demo:true}]);
+      });
+    }
+    await _commitOps(ops);
+    toast(limiteSucursales > 1 ? '✅ Práctica cargada: 3 sucursales + principal. Mirá Inicio y Historial.' : '✅ Práctica cargada. Para ver las sucursales activá el plan Full (panel RavenTechs: 5 toques + PIN).');
+    if (typeof renderSucursalesConfig === 'function') renderSucursalesConfig();
+  } catch(e) { logError('cargarPractica', e.message); toast('Error: '+e.message); }
+}
+async function quitarPractica() {
+  const uid = getUserDoc(); if (!uid) return;
+  if (!confirm('Se quitan SOLO los datos de práctica (sucursales de ejemplo, ventas, gastos y proveedores marcados). Tus datos reales no se tocan. ¿Seguir?')) return;
+  try {
+    toast('Quitando práctica…');
+    const base = db.collection('negocios').doc(uid), ops = [];
+    for (const c of ['ventas','gastos','productos','proveedores']) {
+      const s = await base.collection(c).where('_demo','==',true).get();
+      s.forEach(d => ops.push([d.ref,null]));
+    }
+    const sucs = await base.collection('sucursales').where('_demo','==',true).get();
+    for (const sd of sucs.docs) {
+      for (const c of ['ventas','gastos']) { const s = await sd.ref.collection(c).get(); s.forEach(d => ops.push([d.ref,null])); }
+      if (sd.data().cod) ops.push([db.collection('carnearLinks').doc(sd.data().cod),null]);
+      ops.push([sd.ref,null]);
+    }
+    await _commitOps(ops);
+    toast('✅ Datos de práctica quitados');
+    if (typeof renderSucursalesConfig === 'function') renderSucursalesConfig();
+  } catch(e) { logError('quitarPractica', e.message); toast('Error: '+e.message); }
 }
 
 function enviarLinkWA(nombre, url) {
