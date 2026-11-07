@@ -1,8 +1,16 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.7
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.9 (Training Wheels: Principiante + Avanzado)
   Fecha de esta versión: 25/10/2026
+  v2.9-tw3: NOMBRE DEL NEGOCIO. CarneAR queda como marca (chica, debajo) y arriba va el nombre del comercio, que carga el admin desde el menú oculto → Mis clientes → "Nombre".
+  v2.9-tw2: AVISOS SUAVES (tarjeta chica en Cobrar tras 10 ventas o 7 días, se puede posponer) + LISTA CON CANDADOS en Más (qué trae la
+  versión completa, cada una con botón "Quiero esto" que avisa por WhatsApp) + USO POR CLIENTE en el panel admin (ventas y días, aviso de momento de venta).
+  v2.9-tw1: TRAINING WHEELS. La misma app con dos modos: PRINCIPIANTE (cobrar un importe + medio de pago, historial de hoy,
+  sin catálogo ni stock) y AVANZADO (todo lo anterior). El cliente nuevo entra como Principiante; el admin lo pasa a Avanzado
+  con un botón (menú oculto → Mis clientes). Cuentas anteriores (sin campo "modo") siguen como Avanzado, sin cambios.
+  En Avanzado: carga inicial guiada del catálogo (cortes de carnicería, sin borrar nada) y ajuste de precios en bloque con
+  vista previa y deshacer. Incluye la VENTA POR KILOS de la beta v2.8.
   v2.7: BACKUP ESTÁNDAR devuelto (se había perdido al reescribir): automático diario que baja el archivo, botón manual y restaurar
   en Configuración. Incluye sucursales, gastos, proveedores y vuelve las fechas a su tipo al restaurar.
   v2.6: MODO PRÁCTICA (Config → 🎓 Modo Práctica): carga una carnicería de mentira con 3 sucursales,
@@ -288,6 +296,42 @@
     .raven-hdr h3{font-size:16px;font-weight:700;}
     .btn-cerrar-modal{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;}
 
+    .peso-chip{background:var(--bg2,#0d1413);border:1px solid var(--borde);color:var(--text);border-radius:999px;padding:8px 16px;font-weight:700;font-size:0.9rem;cursor:pointer}
+    .peso-chip:active{border-color:var(--verde,#27ae60);color:var(--verde,#27ae60)}
+    /* ── Training Wheels ── */
+    .tw-only-simple{display:none}
+    body.tw-simple .tw-only-simple{display:block}
+    body.tw-simple .tw-chips.tw-only-simple{display:grid}
+    body.tw-simple .tw-hoy.tw-only-simple{display:flex}
+    body.tw-simple .tw-adv{display:none !important}
+    .tw-chips{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    .tw-chip{padding:14px 8px;border-radius:14px;border:2px solid var(--borde);background:var(--surface);color:var(--text);font-size:0.95rem;font-weight:700;cursor:pointer}
+    .tw-chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
+    .tw-hoy{justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--borde);border-radius:14px;padding:12px 14px;margin:0 12px 12px}
+    .tw-hoy b{font-size:1.15rem;color:var(--accent)}
+    .tw-hint{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.25);border-radius:14px;padding:12px 14px;margin:12px;font-size:0.85rem;line-height:1.5;color:var(--text)}
+    .tw-hint button{margin-top:8px;padding:6px 12px;border-radius:10px;border:1px solid var(--borde);background:var(--surface);color:var(--text2);font-size:0.8rem;cursor:pointer}
+    .tw-lock{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--borde);cursor:pointer}
+    .tw-lock>span{font-size:1.2rem}
+    .tw-lock>div{flex:1;line-height:1.3}
+    .tw-lock small{display:block;color:var(--text2);font-size:0.78rem}
+    .tw-lock i{font-style:normal;font-size:0.75rem;font-weight:700;color:var(--accent);white-space:nowrap}
+    .tw-aviso{background:rgba(139,0,0,.06);border:1px solid rgba(139,0,0,.25);border-radius:14px;padding:12px 14px;margin:0 12px 12px;font-size:0.85rem;line-height:1.45}
+    .tw-aviso .fila{display:flex;gap:8px;margin-top:8px}
+    .tw-aviso button{padding:8px 12px;border-radius:10px;border:1px solid var(--borde);background:var(--surface);color:var(--text2);font-size:0.8rem;cursor:pointer}
+    .tw-aviso button.si{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+    .topbar-title.con-neg{display:flex;flex-direction:row;align-items:baseline;gap:6px;max-width:54vw}
+    .topbar-title .neg{font-size:20px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+    .topbar-title .marca{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.3px;white-space:nowrap;flex-shrink:0}
+    .topbar-title .marca b{color:var(--accent)}
+    .tw-hist-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+    .tw-hist-head h2{margin:0;flex:1;min-width:0}
+    .tw-tres{flex-shrink:0;min-width:118px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:6px 10px;font-size:12px;line-height:1.5}
+    .tw-tres:empty{display:none}
+    .tw-tres .tt{font-size:10px;color:var(--text2);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:1px}
+    .tw-tres .fila{display:flex;justify-content:space-between;gap:10px}
+    .tw-tres .fila b{font-weight:700}
+    .tw-modo-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
   </style>
 <script>
 // RavenTechs PWA Banner v1.1 — en el HEAD para capturar beforeinstallprompt temprano
@@ -564,22 +608,30 @@ var __rtPWA = (function() {
   <!-- CAJA -->
   <div class="section" id="sec-caja">
     <!-- MODE BAR CAJA -->
-    <div class="caja-mode-bar" id="cajaModeBar">
-      <button class="caja-mode-btn active" onclick="setCajaMode('catalogo')">🥩 Catálogo</button>
-      <button class="caja-mode-btn" onclick="setCajaMode('importe')">💰 Importe</button>
+    <div id="twAyudaInicial"></div>
+    <div class="caja-mode-bar tw-adv" id="cajaModeBar">
+      <button class="caja-mode-btn active" onclick="setCajaMode('importe')">💰 Importe</button>
+      <button class="caja-mode-btn" onclick="setCajaMode('catalogo')">🥩 Catálogo</button>
       <button class="caja-mode-btn" id="modeTicketBtn" onclick="setCajaMode('ticket')" style="display:none">📸 Ticket</button>
     </div>
-    <div class="caja-mode-content active" id="modeCatalogo">
+    <div class="caja-mode-content active tw-adv" id="modeCatalogo">
       <div class="grupos-bar" id="gruposBar"></div>
       <div class="pos-grid" id="posGrid"></div>
     </div>
     <!-- IMPORTE MODE -->
     <div class="caja-mode-content" id="modeImporte">
       <div style="padding:8px 0">
-        <p style="font-size:0.8rem;color:var(--text2);margin-bottom:10px">Ingresá el monto y cobrá sin seleccionar productos.</p>
-        <input type="number" id="vrMonto" class="importe-monto-input" placeholder="$ 0" min="0">
-        <input type="text" id="vrDesc" placeholder="Descripción (opcional)" style="margin-bottom:10px">
-        <select id="vrMetodo" style="margin-bottom:10px">
+        <p style="font-size:0.8rem;color:var(--text2);margin-bottom:10px" class="tw-adv">Ingresá el monto y cobrá sin seleccionar productos.</p>
+        <p style="font-size:0.9rem;color:var(--text2);margin-bottom:10px" class="tw-only-simple">1) Escribí cuánto cobraste · 2) Elegí cómo te pagaron · 3) Tocá Cobrar</p>
+        <input type="number" id="vrMonto" class="importe-monto-input" placeholder="$ 0" min="0" inputmode="decimal">
+        <div class="tw-chips tw-only-simple" id="twMetodoChips">
+          <button type="button" class="tw-chip on" data-m="efectivo">💵 Efectivo</button>
+          <button type="button" class="tw-chip" data-m="transferencia">📲 Transferencia</button>
+          <button type="button" class="tw-chip" data-m="tarjeta">💳 Tarjeta</button>
+          <button type="button" class="tw-chip" data-m="mercadopago">🔵 MercadoPago</button>
+        </div>
+        <input type="text" id="vrDesc" placeholder="¿Qué vendiste? (opcional)" style="margin-bottom:10px">
+        <select id="vrMetodo" class="tw-adv" style="margin-bottom:10px">
           <option value="efectivo">💵 Efectivo</option>
           <option value="transferencia">📲 Transferencia</option>
           <option value="tarjeta">💳 Tarjeta</option>
@@ -589,7 +641,7 @@ var __rtPWA = (function() {
       </div>
     </div>
     <!-- TICKET MODE -->
-    <div class="caja-mode-content" id="modeTicket">
+    <div class="caja-mode-content tw-adv" id="modeTicket">
       <div style="text-align:center;padding:8px 0">
         <p style="font-size:0.82rem;color:var(--text2);margin-bottom:12px">Sacá foto al ticket de balanza y la IA carga los items.</p>
         <input type="file" id="inputTicket" accept="image/*" capture="environment" style="display:none" onchange="window.leerTicket(this)">
@@ -601,7 +653,7 @@ var __rtPWA = (function() {
       </div>
     </div>
 
-    <div class="cart" id="cartArea">
+    <div class="cart tw-adv" id="cartArea">
       <h3>🛒 Carrito <span id="cartCount">(0)</span></h3>
       <div id="cartList"></div>
       <div class="cart-total">Total: $<span id="cartTotal">0</span></div>
@@ -611,6 +663,8 @@ var __rtPWA = (function() {
       </div>
     </div>
 
+    <div class="tw-hoy tw-only-simple" id="twHoy"><span>Hoy llevás</span><b id="twHoyTotal">$0</b></div>
+    <div class="tw-only-simple" id="twAviso"></div>
     <!-- CIERRE DE CAJA -->
     <div class="config-group" style="margin:12px;">
       <h3>🔒 Cierre de caja</h3>
@@ -637,7 +691,7 @@ var __rtPWA = (function() {
 
   <!-- HISTORIAL -->
   <div class="section" id="sec-historial">
-    <h2>📜 Historial de ventas</h2>
+    <div class="tw-hist-head"><h2>📜 Historial de ventas</h2><div id="twTresDias" class="tw-tres"></div></div>
     <button class="btn-save" style="margin-bottom:12px;width:100%" onclick="exportarCSV()">⬇️ Exportar CSV</button>
     <div class="historial-filters" id="historialFilters">
       <button class="active" data-filter="hoy">Hoy</button>
@@ -684,13 +738,27 @@ var __rtPWA = (function() {
   <!-- CONFIG -->
   <div class="section" id="sec-config">
     <h2>⚙️ Configuración</h2>
-    <div class="config-group">
+    <div class="config-group tw-only-simple" id="twVersionCompleta">
+      <h3>🚀 Versión completa</h3>
+      <p style="font-size:0.82rem;color:var(--text2);margin-bottom:10px;line-height:1.5">Cuando quieras más, te la habilitamos. Tus ventas se mantienen y no hay que cargar nada de nuevo.</p>
+      <div class="tw-lock" onclick="twPedirCompleta('catálogo de cortes y venta por kilos')"><span>🔒</span><div><b>Catálogo y venta por kilos</b><small>Tus cortes con precio por kilo: pesás y la app calcula el importe.</small></div><i>Quiero esto</i></div>
+      <div class="tw-lock" onclick="twPedirCompleta('control de stock')"><span>🔒</span><div><b>Stock</b><small>Sabé cuánta mercadería te queda y recibí aviso cuando se acaba.</small></div><i>Quiero esto</i></div>
+      <div class="tw-lock" onclick="twPedirCompleta('gastos y proveedores')"><span>🔒</span><div><b>Gastos y proveedores</b><small>Anotá lo que gastás y a quién le comprás: ves tu ganancia real.</small></div><i>Quiero esto</i></div>
+      <div class="tw-lock" onclick="twPedirCompleta('varias sucursales')"><span>🔒</span><div><b>Varias sucursales</b><small>Cada local con su caja, y vos ves todo junto desde el celular.</small></div><i>Quiero esto</i></div>
+      <button class="btn-save" style="width:100%;margin-top:6px" onclick="twPedirCompleta('')">🚀 Quiero la versión completa</button>
+    </div>
+    <div class="config-group" id="twAdminVer" style="display:none">
+      <h3>🎓 Ver mi app como…</h3>
+      <div id="twAdminVerCuerpo"></div>
+    </div>
+    <div class="config-group tw-adv">
       <h3>Catálogo</h3>
       <button class="btn-warning" id="configResetBtn">🔄 Restablecer catálogo de ejemplo</button>
       <button class="btn-warning" id="configCleanDupBtn">🧹 Limpiar duplicados</button>
+      <button class="btn-warning" id="configAjustePreciosBtn" onclick="twAbrirAjustePrecios()">💲 Ajustar precios en bloque</button>
     </div>
 <div class="config-group"><h3 class="card-title" style="font-size:1rem;margin:0 0 6px">❓ Instructivo</h3><p style="font-size:13px;opacity:.8;margin-bottom:10px">Guía paso a paso de cómo usar la app, con preguntas frecuentes.</p><a href="ayuda/" target="_blank" rel="noopener" style="display:inline-block;padding:10px 16px;border-radius:10px;background:#25D366;color:#fff;font-weight:700;text-decoration:none">📖 Abrir instructivo</a></div>
-    <div class="config-group">
+    <div class="config-group tw-adv">
       <h3>🎓 Modo Práctica</h3>
       <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Carga una carnicería de ejemplo con 3 sucursales, ventas de la última semana, gastos y proveedores. Sirve para aprender o mostrar la app. Los datos de práctica se pueden quitar con un botón sin tocar los tuyos.</p>
       <button class="btn-warning" id="configPracticaBtn">🎓 Cargar empresa de práctica</button>
@@ -709,7 +777,7 @@ var __rtPWA = (function() {
       <button class="btn-danger" id="configLogoutBtn">🚪 Cerrar sesión</button>
     </div>
     <!-- SUCURSALES (visible cuando limiteSucursales > 1) -->
-    <div class="config-group hidden" id="sucursalesConfigGroup">
+    <div class="config-group hidden tw-adv" id="sucursalesConfigGroup">
       <h3>🏪 Mis sucursales</h3>
       <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Gestioná tus sucursales y compartí el acceso al cajero.</p>
       <div id="sucursalesConfigList"></div>
@@ -810,6 +878,32 @@ var __rtPWA = (function() {
     <div class="btn-row">
       <button class="btn-cancel" id="provCancelBtn">Cancelar</button>
       <button class="btn-save" id="provSaveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PESO LIBRE -->
+<div class="size-select-overlay" id="pesoLibreOverlay">
+  <div class="size-select-box" id="pesoLibreBox" style="text-align:center;">
+    <h3 id="pesoLibreNombre" style="margin-bottom:4px"></h3>
+    <p style="font-size:0.78rem;color:var(--text2);margin-bottom:12px" id="pesoLibrePrecioKg"></p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">
+      <button type="button" class="peso-chip" data-kg="0.25">¼ kg</button>
+      <button type="button" class="peso-chip" data-kg="0.5">½ kg</button>
+      <button type="button" class="peso-chip" data-kg="1">1 kg</button>
+    </div>
+    <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:6px">
+      <input type="number" id="pesoLibreInput" inputmode="decimal" step="0.001" min="0" placeholder="0.000"
+        style="background:transparent;border:none;outline:none;color:var(--text);font-size:40px;font-weight:800;width:150px;text-align:right;font-family:monospace">
+      <span style="font-size:16px;color:var(--text2);font-weight:600">kg</span>
+    </div>
+    <div style="background:var(--bg2,#0d1413);border:1px solid var(--borde);border-radius:14px;padding:14px;margin:16px 0">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">TOTAL</div>
+      <div style="font-size:24px;font-weight:800;color:var(--verde,#27ae60)" id="pesoLibreTotal">$0</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="document.getElementById('pesoLibreOverlay').classList.remove('show')">Cancelar</button>
+      <button class="btn-save" id="pesoLibreConfirmBtn">✅ Agregar</button>
     </div>
   </div>
 </div>
@@ -991,6 +1085,34 @@ let features = { gastos: false, proveedores: false };
 let carrito = [];
 let currentGrupo = null;
 let logoTaps = 0;
+// Training Wheels: 'principiante' | 'avanzado'. Sin campo en la cuenta = avanzado (cuentas anteriores no cambian).
+let modoApp = 'avanzado';
+// Nombre del negocio (lo carga el admin en clientes/{email}.negocio). CarneAR queda como marca.
+let negocioNombre = '';
+function twLimpiarNombre(v) { return String(v == null ? '' : v).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); }
+function twPintarTitulo(sucNombre) {
+  const el = document.querySelector('.topbar-title'); if (!el) return;
+  el.textContent = '';
+  if (negocioNombre) {
+    el.classList.add('con-neg');
+    const n = document.createElement('span'); n.className = 'neg'; n.textContent = negocioNombre;
+    const m = document.createElement('small'); m.className = 'marca';
+    m.appendChild(document.createTextNode('Carne')); const b = document.createElement('b'); b.textContent = 'AR'; m.appendChild(b);
+    if (sucNombre) m.appendChild(document.createTextNode(' · ' + sucNombre));
+    el.appendChild(n); el.appendChild(m);
+    try { document.title = negocioNombre + ' · CarneAR'; } catch (_) {}
+  } else {
+    el.classList.remove('con-neg');
+    el.appendChild(document.createTextNode('Carne')); const sp = document.createElement('span'); sp.textContent = 'AR'; el.appendChild(sp);
+    if (sucNombre) { const sm = document.createElement('small'); sm.style.cssText = 'font-size:11px;font-weight:400;opacity:.7;margin-left:4px'; sm.textContent = '— ' + sucNombre; el.appendChild(sm); }
+  }
+}
+function esPrincipiante() { return modoApp === 'principiante' && userRole === 'dueno'; }
+// Vista del admin (solo en su teléfono): 'sucursales' (completo con panel de sucursales, lo de siempre) | 'comun' (completo de un solo local) | 'principiante'
+let twForzarUna = false;
+function twVistaAdmin() { try { const v = localStorage.getItem('tw_ver_como'); return (v === 'principiante' || v === 'comun') ? v : 'sucursales'; } catch (_) { return 'sucursales'; } }
+function twLim(n) { return twForzarUna ? 1 : n; }
+function aplicarModoVisual() { document.body.classList.toggle('tw-simple', esPrincipiante()); }
 let logoTimer = null;
 let editingProductId = null;
 let editingStockId = null;
@@ -1005,6 +1127,14 @@ let isDark = localStorage.getItem('carnear-dark') === '1';
 
 // ══════════ TABS CONFIG ══════════
 function getTabsForRole() {
+  // ── Principiante: solo cobrar, ver lo de hoy y ayuda ───────
+  if (esPrincipiante()) {
+    return [
+      {id:'caja',      icon:'💰', label:'Cobrar'},
+      {id:'historial', icon:'📜', label:'Hoy'},
+      {id:'config',    icon:'⚙️', label:'Más'}
+    ];
+  }
   // ── Cajero (acceso por link WhatsApp) ──────────────────────
   if (userRole === 'cajero') {
     // Cajero/encargado: opera la sucursal completa
@@ -1070,10 +1200,10 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (user && user.isAnonymous && _codigoLink) {
         iniciarCajeroLink(_codigoLink);
       } else if (user && user.isAnonymous && !_codigoLink) {
-        currentUser = user;
-        userRole = 'cajero';
-        currentSucursal = { id: 'principal', nombre: 'Principal' };
-        initApp();
+        appRunning = false;
+        try { auth.signOut(); } catch(_) {}
+        showLogin();
+        showError('Tu sesión de caja venció. Ingresá con tu cuenta de Google para seguir.');
       } else {
         appRunning = false;
         showLogin();
@@ -1349,18 +1479,22 @@ function initApp() {
   document.getElementById('login').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('mobNav').classList.remove('hidden');
+  aplicarModoVisual();
+  twPintarTitulo('');
+  twMostrarSelectorAdmin();
   renderTabs(getTabsForRole());
-  if (userRole === 'dueno' && limiteSucursales > 1) {
+  if (userRole === 'dueno' && limiteSucursales > 1 && !esPrincipiante()) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     const sd = document.getElementById('sec-dashboard');
     if (sd) sd.classList.add('active');
   } else {
-    switchTab(userRole === 'dueno' ? 'inicio' : 'caja');
+    switchTab(userRole === 'dueno' && !esPrincipiante() ? 'inicio' : 'caja');
   }
   subscribeData();
   if (typeof initOffline === 'function') initOffline();
   if (typeof cargarWhatsapp === 'function') cargarWhatsapp();
   if (typeof chequearBackupDiario === 'function') chequearBackupDiario();
+  if (!esPrincipiante()) setTimeout(twChequearCargaInicial, 2500);
 }
 
 function renderTabs(tabs) {
@@ -1385,12 +1519,16 @@ function renderTabs(tabs) {
 }
 
 function switchTab(id) {
+  if (esPrincipiante() && id !== 'caja' && id !== 'historial' && id !== 'config') id = 'caja';
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tabs button, .mob-nav button').forEach(b => b.classList.remove('active'));
   const sec = document.getElementById('sec-'+id);
   if(sec) sec.classList.add('active');
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-  if(id==='caja') { renderPOS(); actualizarBotonesModoCaja(); setCajaMode('catalogo'); }
+  if(id==='caja') {
+    if (esPrincipiante()) { setCajaMode('importe'); twActualizarHoy(); twMostrarAyudaInicial(); twMostrarAviso(); }
+    else { renderPOS(); actualizarBotonesModoCaja(); setCajaMode('importe'); }
+  }
   if(id==='historial') loadHistorial('hoy');
   if(id==='inicio') {
     if (enSucursal || userRole === 'cajero') loadDashboard();
@@ -1405,7 +1543,7 @@ function switchTab(id) {
       db.collection('negocios').doc(uid2).get()
         .then(doc => {
           if (doc.exists) {
-            if (doc.data().limiteSucursales) limiteSucursales = doc.data().limiteSucursales;
+            if (doc.data().limiteSucursales) limiteSucursales = twLim(doc.data().limiteSucursales);
           }
           renderSucursalesConfig();
         }).catch(() => renderSucursalesConfig());
@@ -1463,8 +1601,8 @@ function subscribeData() {
       }
     }
     const prevLimite = limiteSucursales;
-    limiteSucursales = datos.limiteSucursales || 1;
-    localStorage.setItem('carnear_ls', limiteSucursales);
+    limiteSucursales = twLim(datos.limiteSucursales || 1);
+    if (!twForzarUna) localStorage.setItem('carnear_ls', limiteSucursales);
     if (limiteSucursales !== prevLimite && limiteSucursales > 1) {
       db.collection('negocios').doc(uid).collection('sucursales').get()
         .then(snap => {
@@ -1548,8 +1686,9 @@ function renderPOS() {
   filtered.forEach(p => {
     const btn = document.createElement('button');
     btn.className = 'pos-item';
+    const kgRef = precioKgDe(p);
     const minPrice = p.tamanos && p.tamanos.length ? Math.min(...p.tamanos.map(t=>t.precio)) : 0;
-    btn.innerHTML = `${p.nombre}<div class="price">$${minPrice.toLocaleString()}</div>`;
+    btn.innerHTML = kgRef ? `${p.nombre}<div class="price">$${kgRef.toLocaleString()}/kg</div>` : `${p.nombre}<div class="price">$${minPrice.toLocaleString()}</div>`;
     btn.onclick = () => selectProduct(p);
     grid.appendChild(btn);
   });
@@ -1559,36 +1698,69 @@ function renderPOS() {
   }
 }
 
-function selectProduct(p) {
-  if(!p.tamanos || p.tamanos.length === 0) return toast('Producto sin tamaños/precios');
-  if(p.tamanos.length === 1) {
-    addToCart(p, p.tamanos[0]);
-  } else {
-    // Show size selector
-    const box = document.getElementById('sizeSelectBox');
-    box.innerHTML = `<h3>${p.nombre}</h3>`;
-    p.tamanos.forEach(t => {
-      const btn = document.createElement('button');
-      btn.innerHTML = `${t.nombre} <span class="s-price">$${t.precio.toLocaleString()}</span>`;
-      btn.onclick = () => {
-        addToCart(p, t);
-        document.getElementById('sizeSelectOverlay').classList.remove('show');
-      };
-      box.appendChild(btn);
-    });
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = 'Cancelar';
-    cancelBtn.style.color = 'var(--rojo)';
-    cancelBtn.onclick = () => document.getElementById('sizeSelectOverlay').classList.remove('show');
-    box.appendChild(cancelBtn);
-    document.getElementById('sizeSelectOverlay').classList.add('show');
-  }
+// Venta por kilos: si el corte tiene precio de "1 Kg" y no se vende también por "Unidad",
+// se pide el peso (¼, ½, 1 o el que marque la balanza). Sin selección de tamaño.
+function precioKgDe(p) {
+  if(!p.tamanos) return 0;
+  if(p.tamanos.some(t => /^unidad$/i.test(t.nombre))) return 0;
+  const k = p.tamanos.find(t => /^1\s*kg$/i.test(t.nombre.trim()));
+  return k ? k.precio : 0;
 }
 
-function addToCart(producto, tamano) {
+function selectProduct(p) {
+  if(!p.tamanos || p.tamanos.length === 0) return toast('Producto sin tamaños/precios');
+  const precioKg = precioKgDe(p);
+  if(precioKg) return abrirPesoLibre(p, precioKg);
+  if(p.tamanos.length === 1) return addToCart(p, p.tamanos[0]);
+  // Productos con varias presentaciones que no son por peso (gaseosas, carbón, etc.)
+  const box = document.getElementById('sizeSelectBox');
+  box.innerHTML = `<h3>${p.nombre}</h3>`;
+  p.tamanos.forEach(t => {
+    const btn = document.createElement('button');
+    btn.innerHTML = `${t.nombre} <span class="s-price">$${t.precio.toLocaleString()}</span>`;
+    btn.onclick = () => {
+      addToCart(p, t);
+      document.getElementById('sizeSelectOverlay').classList.remove('show');
+    };
+    box.appendChild(btn);
+  });
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.style.color = 'var(--rojo)';
+  cancelBtn.onclick = () => document.getElementById('sizeSelectOverlay').classList.remove('show');
+  box.appendChild(cancelBtn);
+  document.getElementById('sizeSelectOverlay').classList.add('show');
+}
+
+function abrirPesoLibre(p, precioKg) {
+  document.getElementById('pesoLibreNombre').textContent = p.nombre;
+  document.getElementById('pesoLibrePrecioKg').textContent = `Precio: $${precioKg.toLocaleString()} por kg`;
+  const input = document.getElementById('pesoLibreInput');
+  input.value = '';
+  const totalEl = document.getElementById('pesoLibreTotal');
+  totalEl.textContent = '$0';
+  const leerPeso = () => parseFloat(String(input.value).replace(',', '.')) || 0;
+  const actualizarTotal = () => { totalEl.textContent = '$' + Math.round(leerPeso() * precioKg).toLocaleString(); };
+  input.oninput = actualizarTotal;
+  document.querySelectorAll('#pesoLibreBox .peso-chip').forEach(ch => {
+    ch.onclick = () => { input.value = ch.dataset.kg; actualizarTotal(); };
+  });
+  document.getElementById('pesoLibreConfirmBtn').onclick = () => {
+    const peso = leerPeso();
+    if(peso <= 0) return toast('Ingresá un peso válido');
+    const total = Math.round(peso * precioKg);
+    const pesoTxt = (Math.round(peso * 1000) / 1000).toString().replace('.', ',') + ' kg';
+    addToCart(p, { nombre: pesoTxt, precio: total }, true);
+    document.getElementById('pesoLibreOverlay').classList.remove('show');
+  };
+  document.getElementById('pesoLibreOverlay').classList.add('show');
+  setTimeout(() => input.focus(), 100);
+}
+
+function addToCart(producto, tamano, esPeso) {
   const existing = carrito.find(c => c.productoId === producto.id && c.tamanoNombre === tamano.nombre);
   if(existing) { existing.cantidad++; }
-  else { carrito.push({productoId:producto.id, nombre:producto.nombre, tamanoNombre:tamano.nombre, precio:tamano.precio, cantidad:1}); }
+  else { carrito.push({productoId:producto.id, nombre:producto.nombre, tamanoNombre:tamano.nombre, precio:tamano.precio, cantidad:1, peso:!!esPeso}); }
   renderCart();
   toast(`${producto.nombre} (${tamano.nombre}) agregado`);
 }
@@ -1603,11 +1775,11 @@ function renderCart() {
 
   list.innerHTML = carrito.map((c,i) => `
     <div class="cart-item">
-      <div>${c.nombre} (${c.tamanoNombre}) x${c.cantidad}</div>
+      <div>${c.nombre} (${c.tamanoNombre})${c.peso ? '' : ' x'+c.cantidad}</div>
       <div>
         $${(c.precio*c.cantidad).toLocaleString()}
-        <button onclick="changeQty(${i},-1)">−</button>
-        <button onclick="changeQty(${i},1)">+</button>
+        ${c.peso ? '' : `<button onclick="changeQty(${i},-1)">−</button>
+        <button onclick="changeQty(${i},1)">+</button>`}
         <button onclick="removeFromCart(${i})" style="color:var(--rojo)">✕</button>
       </div>
     </div>
@@ -2029,6 +2201,7 @@ async function loadReportes() {
 
 // ══════════ HISTORIAL ══════════
 async function loadHistorial(filter) {
+  twMiniTresDias();
   const uid = getUserDoc();
   if(!uid) return;
   let desde, hasta = new Date();
@@ -2463,8 +2636,8 @@ async function verificarMultiSucursal() {
     const neg = await db.collection('negocios').doc(uid).get();
     if (neg.exists) {
       const d = neg.data();
-      limiteSucursales = d.limiteSucursales || 1;
-      localStorage.setItem('carnear_ls', limiteSucursales);
+      limiteSucursales = twLim(d.limiteSucursales || 1);
+      if (!twForzarUna) localStorage.setItem('carnear_ls', limiteSucursales);
       if (d.features) { features = Object.assign(features, d.features); renderTabs(getTabsForRole()); }
     }
     if (limiteSucursales > 1) {
@@ -2476,6 +2649,7 @@ async function verificarMultiSucursal() {
 }
 
 function mostrarDashboard() {
+  if (esPrincipiante() || twForzarUna) return;   // vistas simples del admin: nunca el panel de sucursales
   _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
   const grid = document.getElementById('sucGrid');
   if (!grid) return;
@@ -2518,11 +2692,11 @@ function mostrarDashboard() {
 }
 
 function entrarEnSucursal(suc) {
+  if (esPrincipiante()) return;
   _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
   enSucursal = true;
   currentSucursal = suc;
-  const titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.innerHTML = `Carne<span>AR</span> <small style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">— ${suc.nombre}</small>`;
+  twPintarTitulo(suc.nombre);
   const topLeft = document.querySelector('.topbar-left');
   if (topLeft && !document.getElementById('btnVolverDash')) {
     const btn = document.createElement('button');
@@ -2533,8 +2707,7 @@ function entrarEnSucursal(suc) {
       enSucursal = false;
       currentSucursal = { id: 'principal', nombre: 'Principal' };
       // Restaurar título
-      const tEl = document.querySelector('.topbar-title');
-      if (tEl) tEl.innerHTML = 'Carne<span>AR</span>';
+      twPintarTitulo('');
       // Quitar botón volver
       document.getElementById('btnVolverDash')?.remove();
       // Renderizar tabs de dashboard y mostrar
@@ -2610,6 +2783,8 @@ async function cargarCliente(user) {
 
   // Admin siempre pasa sin restricciones
   if (esAdmin(email)) {
+    { const _v = twVistaAdmin(); modoApp = (_v === 'principiante') ? 'principiante' : 'avanzado'; twForzarUna = (_v === 'comun' || _v === 'principiante'); if (twForzarUna) limiteSucursales = 1; }
+    try { const _s = await db.collection('clientes').doc(email).get(); negocioNombre = _s.exists ? twLimpiarNombre(_s.data().negocio) : ''; } catch (_) { negocioNombre = ''; }
     currentUser = user;
     userRole = 'dueno';
     currentSucursal = { id: 'principal', nombre: 'Principal' };
@@ -2634,15 +2809,23 @@ async function cargarCliente(user) {
         features: PLANES.basico.features,
         limiteSucursales: 1,
         demoHasta: firebase.firestore.Timestamp.fromMillis(Date.now() + RT_DEMO_DIAS * 86400000),
+        modo: 'principiante',
         creadoEn: firebase.firestore.FieldValue.serverTimestamp()
       };
-      await clienteRef.set(basicoData);
+      try { await clienteRef.set(basicoData); }
+      catch (e0) {
+        // Si las reglas todavía no admiten el campo "modo", se crea igual sin él (queda como Avanzado, como hasta ahora)
+        delete basicoData.modo;
+        await clienteRef.set(basicoData);
+      }
       clienteSnap = { data: () => basicoData, exists: true };
       console.log('Cliente nuevo creado con plan básico:', email);
     }
 
     const datos = clienteSnap.data();
     clienteActual = datos;
+    modoApp = (datos.modo === 'principiante') ? 'principiante' : 'avanzado';
+    negocioNombre = twLimpiarNombre(datos.negocio);
 
     // Guardar/actualizar el uid en el registro de cliente (para el panel de actividad)
     if (datos.uid !== user.uid) {
@@ -2704,6 +2887,10 @@ async function cargarMisClientes() {
       const cl = d.data();
       const planNom = PLANES[cl.plan]?.nombre || cl.plan;
       const _dm = cl.demoHasta === null ? 'Cliente real' : (cl.demoHasta && cl.demoHasta.toMillis ? (Math.ceil((cl.demoHasta.toMillis() - Date.now()) / 86400000) > 0 ? 'Prueba: ' + Math.ceil((cl.demoHasta.toMillis() - Date.now()) / 86400000) + ' días' : 'Prueba vencida') : 'Sin prueba');
+      const _esP = cl.modo === 'principiante';
+      const modoBadge = _esP
+        ? '<span class="tw-modo-badge" style="background:rgba(37,99,235,.12);color:#2563eb">🌱 Principiante</span>'
+        : '<span class="tw-modo-badge" style="background:rgba(139,0,0,.12);color:#8B0000">🚀 Avanzado</span>';
       const estadoBadge = cl.activo
         ? '<span style="background:rgba(39,174,96,.12);color:#27ae60;font-size:10px;padding:2px 8px;border-radius:10px">● Activo</span>'
         : '<span style="background:rgba(239,68,68,.12);color:#ef4444;font-size:10px;padding:2px 8px;border-radius:10px">● Inactivo</span>';
@@ -2711,10 +2898,12 @@ async function cargarMisClientes() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <div>
             <div style="font-size:14px;font-weight:700;">${cl.nombre||cl.email}</div>
+            ${cl.negocio ? `<div style="font-size:12px;color:var(--accent);font-weight:600;">🏷️ ${twLimpiarNombre(cl.negocio)}</div>` : ''}
             <div style="font-size:11px;color:var(--text2);">${cl.email} · ${_dm}</div>
           </div>
-          ${estadoBadge}
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${estadoBadge}${modoBadge}</div>
         </div>
+        ${_esP ? `<div style="font-size:11px;color:var(--text2);margin:-2px 0 8px" data-uso-uid="${cl.uid || ''}" data-uso-dias="${(cl.creadoEn && cl.creadoEn.toMillis) ? Math.floor((Date.now() - cl.creadoEn.toMillis()) / 86400000) : 0}">Cargando uso…</div>` : ''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
           <select onchange="cambiarPlan('${d.id}',this.value)" style="flex:1;font-size:12px;padding:6px;">
             <option value="basico" ${cl.plan==='basico'?'selected':''}>Básico — 1 suc</option>
@@ -2724,6 +2913,8 @@ async function cargarMisClientes() {
           <button onclick="pasarACliente('${d.id}')" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3)">✅ Pasar a cliente</button>
           <button onclick="extenderDemo('${d.id}', 7)" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.3)">+7 días</button>
           <button onclick="extenderDemo('${d.id}', 30)" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.3)">+30 días</button>
+          <button onclick="twEditarNegocio('${d.id}')" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.08);color:#2563eb;border:1px solid rgba(37,99,235,.3)">🏷️ Nombre</button>
+          <button onclick="twCambiarModo('${d.id}', '${_esP ? 'avanzado' : 'principiante'}')" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(139,0,0,.08);color:#8B0000;border:1px solid rgba(139,0,0,.3)">${_esP ? '🚀 Pasar a Avanzado' : '🌱 Volver a Principiante'}</button>
           <button onclick="toggleCliente('${d.id}', ${!cl.activo})" style="font-size:11px;padding:6px 10px;border-radius:10px;${cl.activo?'background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);':'background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3);'} cursor:pointer;">${cl.activo?'🚫 Desactivar':'✅ Activar'}</button>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 2px;">
@@ -2736,6 +2927,7 @@ async function cargarMisClientes() {
         </div>
       </div>`;
     }).join('');
+    twCargarUsoClientes();
   } catch(e) { logError('cargarMisClientes', e.message); }
 }
 
@@ -2802,7 +2994,7 @@ function generarResumenCierre(ventas) {
     .map(([k,v]) => `  • ${nombreLabels[k]||k}: $${v.toLocaleString('es-AR')}`)
     .join('\n');
   const sucNombre = currentSucursal?.nombre || 'Principal';
-  return `🥩 *CarneAR — Cierre de Caja*\n📅 ${hoy} | 🏪 ${sucNombre}\n\n🔢 Ventas: ${ventas.length}\n💰 Total: $${total.toLocaleString('es-AR')}\n\n📊 Desglose:\n${desgloseTxt}`;
+  return `${negocioNombre ? '🏪 *' + negocioNombre + '*\n' : ''}🥩 *CarneAR — Cierre de Caja*\n📅 ${hoy} | 🏪 ${sucNombre}\n\n🔢 Ventas: ${ventas.length}\n💰 Total: $${total.toLocaleString('es-AR')}\n\n📊 Desglose:\n${desgloseTxt}`;
 }
 
 async function verResumenCierre() {
@@ -2824,6 +3016,7 @@ function setCajaMode(mode) {
   const ids = { catalogo: 'modeCatalogo', importe: 'modeImporte', ticket: 'modeTicket' };
   const el = document.getElementById(ids[mode]);
   if (el) el.classList.add('active');
+  const _cart = document.getElementById('cartArea'); if (_cart) _cart.style.display = (mode === 'importe') ? 'none' : '';
   document.querySelectorAll('#cajaModeBar .caja-mode-btn').forEach(b => {
     if (b.getAttribute('onclick')?.includes("'" + mode + "'")) b.classList.add('active');
   });
@@ -2856,8 +3049,303 @@ async function registrarVentaRapida() {
     toast('✅ $' + monto.toLocaleString('es-AR') + ' registrado');
     const m = document.getElementById('vrMonto'); if(m) m.value = '';
     const d = document.getElementById('vrDesc'); if(d) d.value = '';
+    if (esPrincipiante()) twActualizarHoy();
   } catch(e) { logError('ventaRapida', e.message); toast('Error: ' + e.message); }
 }
+
+
+// ══════════ TRAINING WHEELS (v2.9-tw1) ══════════
+function twCerrarModal() { document.getElementById('twModal').style.display = 'none'; }
+function twAbrirModal(titulo, html) {
+  document.getElementById('twModalTitulo').textContent = titulo;
+  document.getElementById('twModalCuerpo').innerHTML = html;
+  const m = document.getElementById('twModal');
+  m.style.display = 'flex';
+  m.onclick = e => { if (e.target === m) twCerrarModal(); };
+}
+
+// Medio de pago con botones grandes (Principiante)
+document.addEventListener('click', e => {
+  const chip = e.target.closest && e.target.closest('#twMetodoChips .tw-chip');
+  if (!chip) return;
+  document.querySelectorAll('#twMetodoChips .tw-chip').forEach(c => c.classList.toggle('on', c === chip));
+  const sel = document.getElementById('vrMetodo');
+  if (sel) sel.value = chip.dataset.m;
+});
+
+// Total del día (Principiante)
+async function twActualizarHoy() {
+  try {
+    const ventas = await obtenerVentasHoy();
+    const total = ventas.reduce((s, v) => s + (v.total || 0), 0);
+    const el = document.getElementById('twHoyTotal');
+    if (el) el.textContent = '$' + total.toLocaleString('es-AR') + ' (' + ventas.length + (ventas.length === 1 ? ' venta)' : ' ventas)');
+  } catch (_) {}
+}
+
+// Ayuda de la primera vez (Principiante)
+function twMostrarAyudaInicial() {
+  const box = document.getElementById('twAyudaInicial');
+  if (!box) return;
+  let visto = false;
+  try { visto = localStorage.getItem('tw_ayuda_vista') === '1'; } catch (_) {}
+  if (visto) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="tw-hint">👋 <b>Así de simple:</b> escribí el importe, elegí cómo te pagaron y tocá <b>Cobrar</b>. En <b>Hoy</b> ves lo vendido y en <b>Más</b> el cierre de caja y la copia de seguridad.<br><button onclick="twCerrarAyuda()">Entendido</button></div>';
+}
+function twCerrarAyuda() {
+  try { localStorage.setItem('tw_ayuda_vista', '1'); } catch (_) {}
+  const box = document.getElementById('twAyudaInicial'); if (box) box.innerHTML = '';
+}
+
+// El cliente pide la versión completa (o una función puntual) → aviso por WhatsApp al admin (él la habilita con un botón)
+function twPedirCompleta(tema) {
+  const mail = (currentUser && currentUser.email) ? currentUser.email : '';
+  const txt = 'Hola RavenTechs, quiero pasar a la versión completa de CarneAR' + (tema ? ' (me interesa: ' + tema + ')' : '') + '. Mi cuenta: ' + mail;
+  window.open('https://wa.me/5491136547592?text=' + encodeURIComponent(txt), '_blank');
+}
+
+// Aviso suave en Cobrar: tras 10 ventas o 7 días de uso; se puede posponer 7 días. Un solo aviso a la vez.
+async function twMostrarAviso() {
+  const box = document.getElementById('twAviso');
+  if (!box) return;
+  box.innerHTML = '';
+  try {
+    const hasta = parseInt(localStorage.getItem('tw_aviso_hasta') || '0', 10);
+    if (hasta && Date.now() < hasta) return;
+    let n = 0;
+    try { const s = await col('ventas').limit(10).get(); n = s.size; } catch (_) {}
+    let dias = 0;
+    try { const c = clienteActual && clienteActual.creadoEn; if (c && c.toMillis) dias = Math.floor((Date.now() - c.toMillis()) / 86400000); } catch (_) {}
+    if (n < 10 && dias < 7) return;
+    const txt = n >= 10
+      ? 'Ya cobraste varias ventas con CarneAR. 👏 ¿Querés ver qué cortes se venden más y cuánto stock te queda? La versión completa lo hace sola, sin que cargues todo de nuevo.'
+      : 'Ya llevás una semana usando CarneAR. 👏 Cuando quieras, la versión completa suma catálogo, kilos y stock. Sin apuro, tus ventas se mantienen.';
+    box.innerHTML = '<div class="tw-aviso">' + txt + '<div class="fila"><button class="si" onclick="twPedirCompleta(\'\')">Quiero verla</button><button onclick="twPosponerAviso()">Ahora no</button></div></div>';
+  } catch (_) {}
+}
+function twPosponerAviso() {
+  try { localStorage.setItem('tw_aviso_hasta', String(Date.now() + 7 * 86400000)); } catch (_) {}
+  const box = document.getElementById('twAviso'); if (box) box.innerHTML = '';
+}
+
+// Admin: uso de cada cliente Principiante (ventas y días). Si ya pasó de 10 ventas o 7 días → "momento de ofrecer la completa"
+async function twCargarUsoClientes() {
+  const els = document.querySelectorAll('[data-uso-uid]');
+  for (const el of els) {
+    const uid = el.getAttribute('data-uso-uid');
+    const dias = parseInt(el.getAttribute('data-uso-dias') || '0', 10);
+    if (!uid) { el.textContent = 'Todavía no entró con su cuenta'; continue; }
+    try {
+      const s = await db.collection('negocios').doc(uid).collection('ventas').limit(30).get();
+      const n = s.size;
+      const caliente = n >= 10 || dias >= 7;
+      el.innerHTML = '📊 ' + (n >= 30 ? '30+' : n) + ' ventas · ' + dias + ' días' + (caliente ? ' · <b style="color:#8B0000">💡 momento de ofrecerle la completa</b>' : '');
+    } catch (e) { el.textContent = ''; }
+  }
+}
+
+// Admin: pasar a un cliente de Principiante a Avanzado (y volver). No toca ningún dato del cliente.
+// Mini cuadro: ventas de los 3 días anteriores a hoy (día corrido, hora local), con el total de cada uno. Solo lectura.
+async function twMiniTresDias() {
+  const box = document.getElementById('twTresDias'); if (!box) return;
+  try {
+    const c = col('ventas'); if (!c) return;
+    const ini = new Date(); ini.setHours(0, 0, 0, 0); ini.setDate(ini.getDate() - 3);
+    let snap;
+    try { snap = await c.where('ts', '>=', firebase.firestore.Timestamp.fromDate(ini)).orderBy('ts', 'desc').get(); }
+    catch (_) { snap = await c.orderBy('ts', 'desc').limit(500).get(); }
+    const clave = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const dias = [], tot = {};
+    for (let i = 3; i >= 1; i--) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i); dias.push(d); tot[clave(d)] = 0; }
+    snap.forEach(doc => {
+      const v = doc.data();
+      let d = null;
+      if (v.ts && v.ts.toDate) d = v.ts.toDate();
+      else if (v.fechaDia) d = new Date(v.fechaDia + 'T12:00:00');
+      if (!d) return;
+      const k = clave(d);
+      if (k in tot) tot[k] += (v.total || 0);
+    });
+    const nom = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    box.innerHTML = '<div class="tt">Últimos días</div>' + dias.map(d => '<div class="fila"><span>' + nom[d.getDay()] + '</span><b>$' + tot[clave(d)].toLocaleString('es-AR') + '</b></div>').join('');
+  } catch (_) { box.innerHTML = ''; }
+}
+
+// Admin: ponerle (o cambiarle) el nombre del negocio a un cliente. No toca otros datos.
+async function twEditarNegocio(email) {
+  try {
+    const snap = await db.collection('clientes').doc(email).get();
+    const actual = snap.exists ? twLimpiarNombre(snap.data().negocio) : '';
+    window._twNegEmail = email;
+    twAbrirModal('🏷️ Nombre del negocio', `
+      <p style="font-size:0.85rem;color:var(--text2);line-height:1.5;margin-bottom:10px">Cuenta: <b>${email}</b><br>Se muestra arriba en su app. <b>CarneAR</b> queda abajo como marca.</p>
+      <input type="text" id="twNegInput" maxlength="40" placeholder="Ej: Carnicería López" style="margin-bottom:10px">
+      <button class="btn-save" style="width:100%" onclick="twGuardarNegocio()">Guardar nombre</button>
+      ${actual ? '<button class="btn-warning" style="width:100%;margin-top:8px" onclick="twGuardarNegocio(true)">Quitar el nombre</button>' : ''}`);
+    const inp = document.getElementById('twNegInput'); if (inp) inp.value = actual;
+  } catch (e) { logError('twEditarNegocio', e.message); toast('Error: ' + e.message); }
+}
+async function twGuardarNegocio(quitar) {
+  const email = window._twNegEmail; if (!email) return;
+  const nombre = quitar ? '' : twLimpiarNombre((document.getElementById('twNegInput') || {}).value);
+  if (!quitar && !nombre) return toast('Escribí el nombre del negocio');
+  try {
+    const _propio = currentUser && esAdmin(currentUser.email) && email === currentUser.email;
+    if (_propio) await db.collection('clientes').doc(email).set({ email, negocio: nombre }, { merge: true });
+    else await db.collection('clientes').doc(email).update({ negocio: nombre });
+    if (_propio) { negocioNombre = nombre; twPintarTitulo(enSucursal && currentSucursal ? currentSucursal.nombre : ''); twMostrarSelectorAdmin(); }
+    toast(nombre ? '🏷️ Nombre guardado' : 'Nombre quitado');
+    twCerrarModal(); if (document.getElementById('misClientesList')) cargarMisClientes();
+  } catch (e) { logError('twGuardarNegocio', e.message); toast('Error: ' + e.message); }
+}
+
+async function twCambiarModo(email, nuevo) {
+  if (nuevo !== 'avanzado' && nuevo !== 'principiante') return;
+  try {
+    // Solo cambia el modo. Los extras (ticket con IA, gastos, proveedores, sucursales) se activan aparte, por cliente. No toca datos.
+    await db.collection('clientes').doc(email).update({ modo: nuevo });
+    toast(nuevo === 'avanzado' ? '🚀 Pasó a Avanzado: lo verá al volver a abrir la app' : '🌱 Volvió a Principiante');
+    cargarMisClientes();
+  } catch (e) { logError('twCambiarModo', e.message); toast('Error: ' + e.message); }
+}
+
+// Admin: elegir cómo ver mi propia app (solo en este teléfono). Se recarga para arrancar limpio en esa vista.
+function twVerComo(v) {
+  if (v !== 'principiante' && v !== 'comun' && v !== 'sucursales') v = 'sucursales';
+  try { localStorage.setItem('tw_ver_como', v); } catch (_) {}
+  location.reload();
+}
+function twVistaHtml() {
+  const act = twVistaAdmin();
+  const op = [['sucursales', '🏬 Completo con sucursales', 'Panel con tus 3 locales'], ['comun', '🥩 Completo común', 'Como lo ve un cliente de un solo local'], ['principiante', '🌱 Principiante', 'Solo cobrar, Hoy y Más']];
+  return op.map(o => '<button type="button" onclick="twVerComo(\'' + o[0] + '\')" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border-radius:12px;border:2px solid ' + (act === o[0] ? 'var(--accent)' : 'var(--borde)') + ';background:' + (act === o[0] ? 'rgba(139,0,0,.08)' : 'var(--surface)') + ';color:var(--text);cursor:pointer"><b>' + (act === o[0] ? '✔ ' : '') + o[1] + '</b><br><small style="color:var(--text2)">' + o[2] + '</small></button>').join('');
+}
+function twMostrarSelectorAdmin() {
+  const g = document.getElementById('twAdminVer'); if (!g) return;
+  const ok = !!(currentUser && esAdmin(currentUser.email));
+  g.style.display = ok ? 'block' : 'none';
+  if (ok) document.getElementById('twAdminVerCuerpo').innerHTML = twVistaHtml()
+    + '<button type="button" onclick="twEditarNegocio(\'' + currentUser.email + '\')" style="width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border-radius:12px;border:2px solid var(--borde);background:var(--surface);color:var(--text)"><b>🏷️ Mi nombre de negocio</b><br><span style="font-size:12px;color:var(--text2)">' + (negocioNombre ? twLimpiarNombre(negocioNombre) : 'Sin nombre: se ve solo CarneAR') + '</span></button>';
+}
+
+// ── Carga inicial guiada (Avanzado, catálogo vacío) ──
+function twChequearCargaInicial() {
+  try {
+    if (esPrincipiante() || userRole !== 'dueno' || enSucursal) return;
+    if (!clienteActual || clienteActual.modo !== 'avanzado') return; // solo quien pasó por Principiante
+    if (productos.length > 0) return;
+    if (localStorage.getItem('tw_setup_hecho') === '1') return;
+    twAbrirCargaInicial();
+  } catch (_) {}
+}
+function twAbrirCargaInicial() {
+  twAbrirModal('🥩 Armemos tu catálogo', `
+    <p style="font-size:0.88rem;color:var(--text2);line-height:1.5;margin-bottom:14px">Tu catálogo está vacío. En dos pasos queda listo para vender por kilos:</p>
+    <div class="config-group" style="margin:0 0 10px">
+      <b>Paso 1</b> — Cargá los cortes de carnicería ya armados (vacuna, cerdo, pollo, achuras, embutidos, bebidas y extras).
+      <button class="btn-save" style="width:100%;margin-top:10px" onclick="twCargarCatalogoRubro()">🥩 Cargar cortes de carnicería</button>
+    </div>
+    <div class="config-group" style="margin:0 0 10px">
+      <b>Paso 2</b> — Ajustá todos los precios de una vez a los tuyos (por ejemplo +10%).
+      <button class="btn-warning" style="width:100%;margin-top:10px" onclick="twAbrirAjustePrecios()">💲 Ajustar precios</button>
+    </div>
+    <button style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--borde);background:var(--surface);color:var(--text2)" onclick="try{localStorage.setItem('tw_setup_hecho','1')}catch(_){};twCerrarModal()">Lo hago después</button>`);
+}
+// Solo agrega los cortes que faltan: NUNCA borra ni pisa productos existentes
+async function twCargarCatalogoRubro() {
+  const uid = getUserDoc(); if (!uid) return;
+  try {
+    const snap = await col('productos').get();
+    const existentes = new Set(snap.docs.map(d => String((d.data().nombre || '')).toLowerCase().trim()));
+    const faltan = CATALOGO_EJEMPLO.filter(p => !existentes.has(p.nombre.toLowerCase().trim()));
+    let batch = db.batch(), n = 0;
+    for (const p of faltan) {
+      batch.set(col('productos').doc(), { nombre: p.nombre, categoria: p.categoria, tamanos: p.tamanos, recetaPorTamano: {} });
+      if (++n % 400 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    await batch.commit();
+    toast(faltan.length ? '✅ ' + faltan.length + ' cortes cargados' : 'Ya tenías todos los cortes');
+    try { localStorage.setItem('tw_setup_hecho', '1'); } catch (_) {}
+  } catch (e) { logError('twCargarCatalogo', e.message); toast('Error: ' + e.message); }
+}
+
+// ── Ajuste de precios en bloque (con vista previa y deshacer) ──
+function twRedondear(n) { return n >= 1000 ? Math.round(n / 100) * 100 : Math.round(n / 10) * 10; }
+function twNuevoPrecio(precio, pct) { return Math.max(0, twRedondear(precio * (1 + pct / 100))); }
+function twAbrirAjustePrecios() {
+  const cats = [...new Set(productos.map(p => p.categoria).filter(Boolean))];
+  let undo = null; try { undo = JSON.parse(localStorage.getItem('tw_ultimo_ajuste') || 'null'); } catch (_) {}
+  twAbrirModal('💲 Ajustar precios', `
+    <p style="font-size:0.85rem;color:var(--text2);line-height:1.5;margin-bottom:12px">Subí o bajá los precios de todo el catálogo con un porcentaje. Antes de aplicar ves cómo queda.</p>
+    <label>Rubro / categoría</label>
+    <select id="twAjCat" style="margin-bottom:10px" onchange="twPreviewAjuste()">
+      <option value="">Todas</option>${cats.map(c => `<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('')}
+    </select>
+    <label>Porcentaje (+ sube, − baja)</label>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">
+      ${[-10,5,10,20].map(v => `<button type="button" class="tw-chip" style="padding:10px 4px" onclick="document.getElementById('twAjPct').value=${v};twPreviewAjuste()">${v>0?'+':''}${v}%</button>`).join('')}
+    </div>
+    <input type="number" id="twAjPct" inputmode="decimal" step="0.5" placeholder="Otro %" style="margin-bottom:10px" oninput="twPreviewAjuste()">
+    <div id="twAjPrev" style="background:var(--bg2,rgba(0,0,0,.04));border-radius:12px;padding:10px 12px;font-size:0.82rem;margin-bottom:12px;min-height:40px;color:var(--text2)">Elegí un porcentaje para ver el resultado.</div>
+    <button class="btn-save" id="twAjAplicar" style="width:100%" onclick="twAplicarAjuste()" disabled>Aplicar ajuste</button>
+    ${undo && undo.items && undo.items.length ? `<button class="btn-warning" style="width:100%;margin-top:8px" onclick="twDeshacerAjuste()">↩ Deshacer el último ajuste (${undo.items.length} productos)</button>` : ''}`);
+}
+function twProductosAjuste() {
+  const cat = (document.getElementById('twAjCat') || {}).value || '';
+  return productos.filter(p => p.tamanos && p.tamanos.length && (!cat || p.categoria === cat));
+}
+function twPreviewAjuste() {
+  const pct = parseFloat((document.getElementById('twAjPct') || {}).value);
+  const prev = document.getElementById('twAjPrev'), btn = document.getElementById('twAjAplicar');
+  if (!prev || !btn) return;
+  const lista = twProductosAjuste();
+  if (isNaN(pct) || pct === 0 || pct <= -90 || pct > 500) { prev.textContent = 'Elegí un porcentaje para ver el resultado.'; btn.disabled = true; return; }
+  if (!lista.length) { prev.textContent = 'No hay productos en esa categoría.'; btn.disabled = true; return; }
+  const ej = lista.slice(0, 3).map(p => {
+    const t = p.tamanos[0];
+    return `<div>${p.nombre} (${t.nombre}): $${t.precio.toLocaleString('es-AR')} → <b>$${twNuevoPrecio(t.precio, pct).toLocaleString('es-AR')}</b></div>`;
+  }).join('');
+  prev.innerHTML = `Se modifican <b>${lista.length}</b> productos (${pct > 0 ? '+' : ''}${pct}%):${ej}`;
+  btn.disabled = false;
+}
+async function twAplicarAjuste() {
+  const pct = parseFloat(document.getElementById('twAjPct').value);
+  if (isNaN(pct) || pct === 0 || pct <= -90 || pct > 500) return;
+  const lista = twProductosAjuste(); if (!lista.length) return;
+  if (!confirm('¿Aplicar ' + (pct > 0 ? '+' : '') + pct + '% a ' + lista.length + ' productos? Después podés deshacerlo.')) return;
+  try {
+    const undo = { fecha: Date.now(), items: lista.map(p => ({ id: p.id, tamanos: p.tamanos })) };
+    try { localStorage.setItem('tw_ultimo_ajuste', JSON.stringify(undo)); } catch (_) {}
+    let batch = db.batch(), n = 0;
+    for (const p of lista) {
+      const tam = p.tamanos.map(t => ({ nombre: t.nombre, precio: twNuevoPrecio(t.precio, pct) }));
+      batch.update(col('productos').doc(p.id), { tamanos: tam });
+      if (++n % 400 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    await batch.commit();
+    try { localStorage.setItem('tw_setup_hecho', '1'); } catch (_) {}
+    toast('✅ Precios ajustados (' + lista.length + ' productos)');
+    twCerrarModal();
+  } catch (e) { logError('twAplicarAjuste', e.message); toast('Error: ' + e.message); }
+}
+async function twDeshacerAjuste() {
+  let undo = null; try { undo = JSON.parse(localStorage.getItem('tw_ultimo_ajuste') || 'null'); } catch (_) {}
+  if (!undo || !undo.items || !undo.items.length) return toast('No hay nada para deshacer');
+  if (!confirm('¿Volver los precios a como estaban antes del último ajuste?')) return;
+  try {
+    let batch = db.batch(), n = 0;
+    for (const it of undo.items) {
+      if (!productos.some(p => p.id === it.id)) continue; // si el producto ya no existe, se omite
+      batch.update(col('productos').doc(it.id), { tamanos: it.tamanos });
+      if (++n % 400 === 0) { await batch.commit(); batch = db.batch(); }
+    }
+    await batch.commit();
+    try { localStorage.removeItem('tw_ultimo_ajuste'); } catch (_) {}
+    toast('↩ Precios restaurados');
+    twCerrarModal();
+  } catch (e) { logError('twDeshacerAjuste', e.message); toast('Error: ' + e.message); }
+}
+// ══════════ FIN TRAINING WHEELS ══════════
 
 // ══ FEATURES PANEL (modal flotante) ══════════════════════════
 function showFeaturesPanel() {
@@ -2878,6 +3366,10 @@ function showFeaturesPanel() {
       ${makeToggle('proveedores','🏭','Proveedores')}
       ${makeToggle('ticket','📸','Escáner de tickets')}
       ${currentUser?.email === ADMIN_EMAIL ? `
+      <div style="margin-top:14px;border-top:1px solid var(--borde);padding-top:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🎓 Training Wheels</div>
+        ${twVistaHtml()}
+      </div>
       <div style="margin-top:14px;border-top:1px solid var(--borde);padding-top:14px;">
         <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">👥 Mis clientes</div>
         <div id="misClientesList"><p style="font-size:13px;color:var(--text2);text-align:center">Cargando...</p></div>
@@ -3143,10 +3635,21 @@ function copiarLink(url) {
 
   // SERVICE WORKER — P3 ROBUSTEZ
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw-carnear.js')
+    navigator.serviceWorker.register('sw-carnear.js')
       .catch(e => logError('sw', e));
   }
 </script>
+
+  <!-- TRAINING WHEELS: carga inicial y ajuste de precios -->
+  <div id="twModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;align-items:flex-end;justify-content:center;">
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:18px 20px 28px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 id="twModalTitulo" style="margin:0"></h3>
+        <button class="btn-cerrar-modal" onclick="twCerrarModal()">✕</button>
+      </div>
+      <div id="twModalCuerpo"></div>
+    </div>
+  </div>
 
   <!-- MODAL RAVENTECHS -->
   <div id="modalRaven" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;align-items:flex-end;justify-content:center;">
