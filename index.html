@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.9 (Training Wheels: Principiante + Avanzado)
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.9.1 (Training Wheels)
   Fecha de esta versión: 25/10/2026
   v2.9-tw3: NOMBRE DEL NEGOCIO. CarneAR queda como marca (chica, debajo) y arriba va el nombre del comercio, que carga el admin desde el menú oculto → Mis clientes → "Nombre".
   v2.9-tw2: AVISOS SUAVES (tarjeta chica en Cobrar tras 10 ventas o 7 días, se puede posponer) + LISTA CON CANDADOS en Más (qué trae la
@@ -537,9 +537,6 @@ var __rtPWA = (function() {
     <button class="btn-google" id="loginGoogleBtn">
       Ingresar con Google
     </button>
-    <button class="btn-cajero" id="loginCajeroBtn">
-      🥩 Ingresar como Punto de Venta
-    </button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -959,7 +956,6 @@ const db = firebase.firestore();
   }
 
 // ══════════ CONSTANTS ══════════
-const PIN_CAJERO = '2468';
 const PIN_ADMIN = '';
 const ADMIN_EMAIL = 'rgaraventa@gmail.com';
 
@@ -1215,7 +1211,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginGoogleBtn').onclick = loginGoogle;
   document.getElementById('loginEmailBtn').onclick = loginEmail;
   document.getElementById('loginToggle').onclick = toggleRegister;
-  document.getElementById('loginCajeroBtn').onclick = loginCajero;
 
   // Theme
   document.getElementById('themeBtn').onclick = toggleTheme;
@@ -1325,16 +1320,6 @@ async function loginEmail() {
   } catch(e) { showError(e.message); }
 }
 
-function loginCajero() {
-  pinCallback = async (pin) => {
-    if(pin === PIN_CAJERO) {
-      try { await auth.signInAnonymously(); } catch(e) { showError(e.message); }
-      return true;
-    }
-    return false;
-  };
-  openPin('PIN Punto de Venta');
-}
 
 // ══════════ BACKUP ESTÁNDAR 2.7 ══════════
 // Automático: una vez por día al entrar (solo el dueño). Baja el archivo JSON al dispositivo y deja una copia
@@ -2747,9 +2732,9 @@ function mostrarCartelDemo(dias) {
   b.href = 'https://wa.me/5491136547592?text=' + encodeURIComponent('Hola RavenTechs, quiero activar mi cuenta de CarneAR');
   b.target = '_blank';
   b.textContent = '🎓 Prueba gratis: ' + (dias === 1 ? 'te queda 1 día' : 'te quedan ' + dias + ' días') + ' · Activar mi cuenta';
-  b.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);left:50%;transform:translateX(-50%);z-index:9000;padding:5px 14px;border-radius:99px;font:600 12px system-ui,sans-serif;text-decoration:none;white-space:nowrap;color:#fff;background:' + (urgente ? '#dc2626' : '#1d4ed8') + ';box-shadow:0 2px 8px rgba(0,0,0,.25);' + (urgente ? 'animation:rtDemoBlink 1.2s ease-in-out infinite;' : '');
+  b.style.cssText = 'display:block;position:relative;z-index:9000;padding:6px 12px;padding-top:calc(env(safe-area-inset-top,0px) + 6px);text-align:center;font:600 12px system-ui,sans-serif;text-decoration:none;color:#fff;background:' + (urgente ? '#dc2626' : '#1d4ed8') + ';box-shadow:0 2px 8px rgba(0,0,0,.25);' + (urgente ? 'animation:rtDemoBlink 1.2s ease-in-out infinite;' : '');
   const st = document.createElement('style'); st.textContent = '@keyframes rtDemoBlink{50%{opacity:.55}}';
-  document.head.appendChild(st); document.body.appendChild(b);
+  document.head.appendChild(st); document.body.insertBefore(b, document.body.firstChild);
 }
 // Admin: pasar una cuenta de prueba a cliente real (quita el vencimiento) o darle 7 días más
 async function pasarACliente(email) {
