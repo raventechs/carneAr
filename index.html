@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.9.1 (Training Wheels)
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.9.3 (Training Wheels + primeros pasos)
   Fecha de esta versión: 25/10/2026
   v2.9-tw3: NOMBRE DEL NEGOCIO. CarneAR queda como marca (chica, debajo) y arriba va el nombre del comercio, que carga el admin desde el menú oculto → Mis clientes → "Nombre".
   v2.9-tw2: AVISOS SUAVES (tarjeta chica en Cobrar tras 10 ventas o 7 días, se puede posponer) + LISTA CON CANDADOS en Más (qué trae la
@@ -309,6 +309,15 @@
     .tw-chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
     .tw-hoy{justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--borde);border-radius:14px;padding:12px 14px;margin:0 12px 12px}
     .tw-hoy b{font-size:1.15rem;color:var(--accent)}
+    .tw-chk{background:var(--surface);border:2px solid #2563eb;border-radius:16px;padding:12px 14px;margin:12px;box-shadow:0 4px 16px rgba(37,99,235,.30)}
+    .tw-chk .tt{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:0.95rem;margin-bottom:6px}
+    .tw-chk .tt button{background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px}
+    .tw-chk .barra{height:6px;border-radius:99px;background:rgba(0,0,0,.08);margin:2px 0 8px;overflow:hidden}
+    .tw-chk .barra i{display:block;height:100%;background:#27ae60;border-radius:99px;transition:width .3s}
+    .tw-chk .paso{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--borde);padding:10px 2px;font-size:0.9rem;color:var(--text);cursor:pointer}
+    .tw-chk .paso .ck{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:2px solid #9aa4b2;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+    .tw-chk .paso.ok{opacity:.65;text-decoration:line-through;cursor:default}
+    .tw-chk .paso.ok .ck{background:#27ae60;border-color:#27ae60}
     .tw-hint{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.25);border-radius:14px;padding:12px 14px;margin:12px;font-size:0.85rem;line-height:1.5;color:var(--text)}
     .tw-hint button{margin-top:8px;padding:6px 12px;border-radius:10px;border:1px solid var(--borde);background:var(--surface);color:var(--text2);font-size:0.8rem;cursor:pointer}
     .tw-lock{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--borde);cursor:pointer}
@@ -326,9 +335,9 @@
     .topbar-title .marca b{color:var(--accent)}
     .tw-hist-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
     .tw-hist-head h2{margin:0;flex:1;min-width:0}
-    .tw-tres{flex-shrink:0;min-width:118px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:6px 10px;font-size:12px;line-height:1.5}
+    .tw-tres{flex-shrink:0;min-width:140px;background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:8px 12px;font-size:14px;line-height:1.55;box-shadow:0 3px 12px rgba(139,0,0,.22)}
     .tw-tres:empty{display:none}
-    .tw-tres .tt{font-size:10px;color:var(--text2);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:1px}
+    .tw-tres .tt{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:1px}
     .tw-tres .fila{display:flex;justify-content:space-between;gap:10px}
     .tw-tres .fila b{font-weight:700}
     .tw-modo-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
@@ -587,6 +596,7 @@ var __rtPWA = (function() {
 
   <!-- DASHBOARD (inicio dueño) -->
   <div class="section" id="sec-inicio">
+    <div id="twChecklist2"></div>
     <h2>📊 Panel del dueño</h2>
     <div id="dashCards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
       <div class="report-card"><h3>Hoy</h3><div class="big" id="dashHoy">-</div><p class="text-sm" id="dashHoyN">0 ventas</p></div>
@@ -606,6 +616,7 @@ var __rtPWA = (function() {
   <div class="section" id="sec-caja">
     <!-- MODE BAR CAJA -->
     <div id="twAyudaInicial"></div>
+    <div id="twChecklist"></div>
     <div class="caja-mode-bar tw-adv" id="cajaModeBar">
       <button class="caja-mode-btn active" onclick="setCajaMode('importe')">💰 Importe</button>
       <button class="caja-mode-btn" onclick="setCajaMode('catalogo')">🥩 Catálogo</button>
@@ -1085,6 +1096,7 @@ let logoTaps = 0;
 let modoApp = 'avanzado';
 // Nombre del negocio (lo carga el admin en clientes/{email}.negocio). CarneAR queda como marca.
 let negocioNombre = '';
+let twEnPrueba = false; // true mientras la cuenta está en su prueba gratis (para la tarjeta de primeros pasos)
 function twLimpiarNombre(v) { return String(v == null ? '' : v).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); }
 function twPintarTitulo(sucNombre) {
   const el = document.querySelector('.topbar-title'); if (!el) return;
@@ -1480,6 +1492,7 @@ function initApp() {
   if (typeof cargarWhatsapp === 'function') cargarWhatsapp();
   if (typeof chequearBackupDiario === 'function') chequearBackupDiario();
   if (!esPrincipiante()) setTimeout(twChequearCargaInicial, 2500);
+  setTimeout(twPintarChecklist, 1500);
 }
 
 function renderTabs(tabs) {
@@ -1513,9 +1526,11 @@ function switchTab(id) {
   if(id==='caja') {
     if (esPrincipiante()) { setCajaMode('importe'); twActualizarHoy(); twMostrarAyudaInicial(); twMostrarAviso(); }
     else { renderPOS(); actualizarBotonesModoCaja(); setCajaMode('importe'); }
+    twPintarChecklist();
   }
-  if(id==='historial') loadHistorial('hoy');
+  if(id==='historial') { loadHistorial('hoy'); twMarcarPaso('hoy'); }
   if(id==='inicio') {
+    twPintarChecklist();
     if (enSucursal || userRole === 'cajero') loadDashboard();
     else if (limiteSucursales > 1 && sucursales.length > 1) mostrarDashboard();
     else loadDashboard();
@@ -1827,6 +1842,7 @@ async function confirmarVenta() {
     renderCart();
     document.getElementById('modalCobrar').classList.remove('show');
     toast('✅ Venta registrada');
+    twMarcarPaso('venta');
   } catch(e) { toast('Error: '+e.message); }
 }
 
@@ -2835,6 +2851,7 @@ async function cargarCliente(user) {
       mostrarCartelDemo(dias);
     }
 
+    twEnPrueba = !!demoMs;
     // Aplicar features del cliente (no del negocio)
     features = Object.assign(features, datos.features || {});
     limiteSucursales = datos.limiteSucursales || 1;
@@ -2983,6 +3000,7 @@ function generarResumenCierre(ventas) {
 }
 
 async function verResumenCierre() {
+  twMarcarPaso('cierre');
   const ventas = await obtenerVentasHoy();
   if (!ventas.length) { toast('No hay ventas hoy'); return; }
   alert(generarResumenCierre(ventas).replace(/\*/g,''));
@@ -3035,6 +3053,7 @@ async function registrarVentaRapida() {
     const m = document.getElementById('vrMonto'); if(m) m.value = '';
     const d = document.getElementById('vrDesc'); if(d) d.value = '';
     if (esPrincipiante()) twActualizarHoy();
+    twMarcarPaso('venta');
   } catch(e) { logError('ventaRapida', e.message); toast('Error: ' + e.message); }
 }
 
@@ -3130,6 +3149,58 @@ async function twCargarUsoClientes() {
 }
 
 // Admin: pasar a un cliente de Principiante a Avanzado (y volver). No toca ningún dato del cliente.
+// ── Tarjeta "Tus primeros pasos": 3 pasos que se tildan solos. Solo durante la prueba gratis (el admin la ve en la vista Principiante para probarla). ──
+function twChkClave() { return 'tw_chk_' + ((currentUser && currentUser.uid) || 'x'); }
+function twChkLeer() { try { return JSON.parse(localStorage.getItem(twChkClave()) || '{}') || {}; } catch (_) { return {}; } }
+function twChkGuardar(o) { try { localStorage.setItem(twChkClave(), JSON.stringify(o)); } catch (_) {} }
+function twChkVisible() {
+  if (userRole !== 'dueno' || !currentUser) return false;
+  const o = twChkLeer(); if (o.fin) return false;
+  let verComo = ''; try { verComo = localStorage.getItem('tw_ver_como') || ''; } catch (_) {}
+  const admin = esAdmin(currentUser.email) && rtIsAdmin();
+  return admin ? verComo === 'principiante' : twEnPrueba;
+}
+function twChkPasos() {
+  if (esPrincipiante()) return [
+    { k: 'venta', t: 'Cobrá tu primera venta', ir: () => { const m = document.getElementById('vrMonto'); if (m) m.focus(); } },
+    { k: 'hoy', t: 'Mirá lo vendido en «Hoy»', ir: () => switchTab('historial') },
+    { k: 'cierre', t: 'Probá el cierre de caja (en «Más»)', ir: () => switchTab('config') }
+  ];
+  return [
+    { k: 'prod', t: 'Cargá tus productos (menú «Menú»)', ir: () => switchTab('menu') },
+    { k: 'venta', t: 'Hacé tu primera venta', ir: () => switchTab('caja') },
+    { k: 'hoy', t: 'Mirá el historial o el cierre de caja', ir: () => switchTab('historial') }
+  ];
+}
+function twMarcarPaso(k) {
+  try {
+    if (!twChkVisible()) return;
+    const o = twChkLeer(); if (o[k]) return;
+    o[k] = 1; if (k === 'cierre' && !esPrincipiante()) o.hoy = 1; twChkGuardar(o);
+    twPintarChecklist();
+  } catch (_) {}
+}
+async function twPintarChecklist() {
+  const box = document.getElementById('twChecklist'); if (!box) return;
+  const box2 = document.getElementById('twChecklist2');
+  const poner = h => { box.innerHTML = h; if (box2) box2.innerHTML = h; };
+  try {
+    if (!twChkVisible()) { poner(''); return; }
+    const o = twChkLeer();
+    // lo que ya se puede saber mirando los datos (por si hizo cosas antes de ver la tarjeta)
+    if (!o.venta) { try { const s = await col('ventas').limit(1).get(); if (!s.empty) { o.venta = 1; } } catch (_) {} }
+    if (!o.prod && !esPrincipiante() && Array.isArray(productos) && productos.length > 0) o.prod = 1;
+    twChkGuardar(o);
+    const pasos = twChkPasos();
+    const hechos = pasos.filter(p => o[p.k]).length;
+    if (hechos === pasos.length) { o.fin = 1; twChkGuardar(o); poner(''); toast('🎉 ¡Listo! Ya sabés lo básico de CarneAR'); return; }
+    poner('<div class="tw-chk"><div class="tt"><span>🚀 Tus primeros pasos (' + hechos + ' de ' + pasos.length + ')</span><button type="button" onclick="twChkOcultar()">Ocultar</button></div><div class="barra"><i style="width:' + Math.round(hechos * 100 / pasos.length) + '%"></i></div>'
+      + pasos.map((p, i) => '<button type="button" class="paso' + (o[p.k] ? ' ok' : '') + '" onclick="twChkIr(' + i + ')"><span class="ck">' + (o[p.k] ? '✓' : '') + '</span><span>' + p.t + '</span></button>').join('') + '</div>');
+  } catch (_) { poner(''); }
+}
+function twChkIr(i) { const p = twChkPasos()[i]; if (p && !twChkLeer()[p.k]) p.ir(); }
+function twChkOcultar() { const o = twChkLeer(); o.fin = 1; twChkGuardar(o); ['twChecklist','twChecklist2'].forEach(id => { const b = document.getElementById(id); if (b) b.innerHTML = ''; }); }
+
 // Mini cuadro: ventas de los 3 días anteriores a hoy (día corrido, hora local), con el total de cada uno. Solo lectura.
 async function twMiniTresDias() {
   const box = document.getElementById('twTresDias'); if (!box) return;
