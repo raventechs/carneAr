@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════
-  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.9.3 (Training Wheels + primeros pasos)
+  CARNEAR — CAJA REGISTRADORA PARA CARNICERÍAS — v2.10 (sucursales en vista simple + Plus Panel del dueño)
+  v2.10: En modo Principiante con sucursales habilitadas (limiteSucursales>1) se ven los locales como chips en la caja y la pestaña «Dueño» (Plus: lo activa el admin por cliente con el botón «Activar Panel dueño», campo clientes/{email}.panelDueno; sin Plus muestra candado + WhatsApp). Negocio único: sin cambios.
   Fecha de esta versión: 25/10/2026
   v2.9-tw3: NOMBRE DEL NEGOCIO. CarneAR queda como marca (chica, debajo) y arriba va el nombre del comercio, que carga el admin desde el menú oculto → Mis clientes → "Nombre".
   v2.9-tw2: AVISOS SUAVES (tarjeta chica en Cobrar tras 10 ventas o 7 días, se puede posponer) + LISTA CON CANDADOS en Más (qué trae la
@@ -785,7 +786,7 @@ var __rtPWA = (function() {
       <button class="btn-danger" id="configLogoutBtn">🚪 Cerrar sesión</button>
     </div>
     <!-- SUCURSALES (visible cuando limiteSucursales > 1) -->
-    <div class="config-group hidden tw-adv" id="sucursalesConfigGroup">
+    <div class="config-group hidden" id="sucursalesConfigGroup">
       <h3>🏪 Mis sucursales</h3>
       <p style="font-size:0.78rem;color:var(--text2);margin-bottom:10px">Gestioná tus sucursales y compartí el acceso al cajero.</p>
       <div id="sucursalesConfigList"></div>
@@ -1116,6 +1117,55 @@ function twPintarTitulo(sucNombre) {
   }
 }
 function esPrincipiante() { return modoApp === 'principiante' && userRole === 'dueno'; }
+// v2.10: Principiante + sucursales activadas (límite > 1) = vista simple con varios locales. Con 1 sola sucursal nada cambia.
+function twMultiSimple() { return esPrincipiante() && limiteSucursales > 1; }
+// Plus «Panel del dueño»: lo activa el admin por cliente (clientes/{email}.panelDueno). Solo el admin puede escribirlo (reglas actuales).
+function twTienePanelDueno() { return !!(clienteActual && clienteActual.panelDueno); }
+function twPintarLocalBar() {
+  const sec = document.getElementById('sec-caja'); if (!sec) return;
+  let bar = document.getElementById('twLocalBar');
+  if (!twMultiSimple() || !sucursales.length) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'twLocalBar';
+    bar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px;padding:0 2px';
+    sec.insertBefore(bar, sec.firstChild);
+  }
+  const actual = (currentSucursal && currentSucursal.id) || 'principal';
+  const locales = [{ id: 'principal', nombre: 'Principal' }].concat(sucursales.filter(x => x.activa !== false));
+  bar.textContent = '';
+  const lbl = document.createElement('span'); lbl.style.cssText = 'font-size:12px;color:var(--text2)'; lbl.textContent = 'Local:'; bar.appendChild(lbl);
+  locales.forEach(l => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = l.nombre;
+    b.style.cssText = 'font-size:12px;font-weight:700;padding:6px 12px;border-radius:14px;cursor:pointer;border:1px solid var(--accent);' + (l.id === actual ? 'background:var(--accent);color:#fff;' : 'background:transparent;color:var(--accent);');
+    b.onclick = () => twElegirLocal(l, false);
+    bar.appendChild(b);
+  });
+}
+function twElegirLocal(suc, irAHoy) {
+  if (!suc) return;
+  const principal = suc.id === 'principal';
+  currentSucursal = principal ? { id: 'principal', nombre: 'Principal' } : suc;
+  enSucursal = !principal;
+  twPintarTitulo(principal ? '' : suc.nombre);
+  subscribeData();
+  twPintarLocalBar();
+  switchTab(irAHoy ? 'historial' : 'caja');
+}
+function twAbrirPanelDueno() {
+  if (twTienePanelDueno()) { mostrarDashboard(); return; }
+  document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+  let sec = document.getElementById('sec-duenoPromo');
+  if (!sec) {
+    sec = document.createElement('div'); sec.className = 'section'; sec.id = 'sec-duenoPromo';
+    const ref = document.getElementById('sec-dashboard'); ref.parentNode.insertBefore(sec, ref);
+    const wa = 'https://wa.me/5491136547592?text=' + encodeURIComponent('Hola RavenTechs, quiero el Plus Panel del dueño de CarneAR');
+    sec.innerHTML = '<div style="padding:24px 18px;text-align:center"><div style="font-size:46px">🔒</div>' +
+      '<h2 style="color:var(--accent);margin:8px 0 6px">Panel del dueño <span style="font-size:.6em;vertical-align:middle">⭐ Plus</span></h2>' +
+      '<p style="color:var(--text2);font-size:.9rem;line-height:1.5;max-width:320px;margin:0 auto 16px">Mirá todos tus locales juntos: cuánto vendió cada uno hoy, el total general y entrá al detalle de cada sucursal sin salir de tu cuenta.</p>' +
+      '<a href="' + wa + '" target="_blank" rel="noopener" style="display:inline-block;background:#25D366;color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;text-decoration:none">📲 Quiero activarlo</a></div>';
+  }
+  sec.classList.add('active');
+}
 // Vista del admin (solo en su teléfono): 'sucursales' (completo con panel de sucursales, lo de siempre) | 'comun' (completo de un solo local) | 'principiante'
 let twForzarUna = false;
 function twVistaAdmin() { try { const v = localStorage.getItem('tw_ver_como'); return (v === 'principiante' || v === 'comun') ? v : 'sucursales'; } catch (_) { return 'sucursales'; } }
@@ -1140,6 +1190,7 @@ function getTabsForRole() {
     return [
       {id:'caja',      icon:'💰', label:'Cobrar'},
       {id:'historial', icon:'📜', label:'Hoy'},
+      ...(limiteSucursales > 1 ? [{id:'dashboard', icon:'📊', label: twTienePanelDueno() ? 'Dueño' : '🔒 Dueño'}] : []),
       {id:'config',    icon:'⚙️', label:'Más'}
     ];
   }
@@ -1517,6 +1568,11 @@ function renderTabs(tabs) {
 }
 
 function switchTab(id) {
+  if (id === 'dashboard' && twMultiSimple()) {   // v2.10: Panel del dueño (Plus) dentro de la vista simple
+    document.querySelectorAll('.tabs button, .mob-nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('[data-tab="dashboard"]').forEach(b => b.classList.add('active'));
+    twAbrirPanelDueno(); return;
+  }
   if (esPrincipiante() && id !== 'caja' && id !== 'historial' && id !== 'config') id = 'caja';
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tabs button, .mob-nav button').forEach(b => b.classList.remove('active'));
@@ -1524,7 +1580,7 @@ function switchTab(id) {
   if(sec) sec.classList.add('active');
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
   if(id==='caja') {
-    if (esPrincipiante()) { setCajaMode('importe'); twActualizarHoy(); twMostrarAyudaInicial(); twMostrarAviso(); }
+    if (esPrincipiante()) { setCajaMode('importe'); twActualizarHoy(); twMostrarAyudaInicial(); twMostrarAviso(); twPintarLocalBar(); }
     else { renderPOS(); actualizarBotonesModoCaja(); setCajaMode('importe'); }
     twPintarChecklist();
   }
@@ -2644,13 +2700,14 @@ async function verificarMultiSucursal() {
     if (limiteSucursales > 1) {
       const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
       sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (sucursales.length > 1) mostrarDashboard();
+      if (sucursales.length > 1 && !esPrincipiante()) mostrarDashboard();
     }
+    if (twMultiSimple()) { renderTabs(getTabsForRole()); twPintarLocalBar(); }
   } catch(e) { console.log('verificarMultiSucursal:', e.message, e.code); }
 }
 
 function mostrarDashboard() {
-  if (esPrincipiante() || twForzarUna) return;   // vistas simples del admin: nunca el panel de sucursales
+  if ((esPrincipiante() && !twMultiSimple()) || twForzarUna) return;   // vistas simples del admin: nunca el panel de sucursales (salvo vista simple con sucursales)
   _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
   const grid = document.getElementById('sucGrid');
   if (!grid) return;
@@ -2693,7 +2750,7 @@ function mostrarDashboard() {
 }
 
 function entrarEnSucursal(suc) {
-  if (esPrincipiante()) return;
+  if (esPrincipiante()) { if (twMultiSimple()) twElegirLocal(suc, true); return; }
   _dashUnsubs.forEach(u => u && u()); _dashUnsubs.length = 0;
   enSucursal = true;
   currentSucursal = suc;
@@ -2916,6 +2973,7 @@ async function cargarMisClientes() {
           <button onclick="extenderDemo('${d.id}', 7)" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.3)">+7 días</button>
           <button onclick="extenderDemo('${d.id}', 30)" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.1);color:#2563eb;border:1px solid rgba(37,99,235,.3)">+30 días</button>
           <button onclick="twEditarNegocio('${d.id}')" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(37,99,235,.08);color:#2563eb;border:1px solid rgba(37,99,235,.3)">🏷️ Nombre</button>
+          <button onclick="twTogglePanelDueno('${d.id}', ${!cl.panelDueno})" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.4)">${cl.panelDueno ? '⭐ Panel dueño: ACTIVO (quitar)' : '⭐ Activar Panel dueño'}</button>
           <button onclick="twCambiarModo('${d.id}', '${_esP ? 'avanzado' : 'principiante'}')" style="font-size:11px;padding:6px 10px;border-radius:10px;background:rgba(139,0,0,.08);color:#8B0000;border:1px solid rgba(139,0,0,.3)">${_esP ? '🚀 Pasar a Avanzado' : '🌱 Volver a Principiante'}</button>
           <button onclick="toggleCliente('${d.id}', ${!cl.activo})" style="font-size:11px;padding:6px 10px;border-radius:10px;${cl.activo?'background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);':'background:rgba(39,174,96,.1);color:#27ae60;border:1px solid rgba(39,174,96,.3);'} cursor:pointer;">${cl.activo?'🚫 Desactivar':'✅ Activar'}</button>
         </div>
@@ -3255,6 +3313,13 @@ async function twGuardarNegocio(quitar) {
   } catch (e) { logError('twGuardarNegocio', e.message); toast('Error: ' + e.message); }
 }
 
+async function twTogglePanelDueno(email, on) {
+  try {
+    await db.collection('clientes').doc(email).update({ panelDueno: !!on });   // solo suma un campo; no toca datos
+    toast(on ? '⭐ Panel del dueño activado: lo verá al volver a abrir la app' : 'Panel del dueño desactivado');
+    cargarMisClientes();
+  } catch (e) { logError('twTogglePanelDueno', e.message); toast('Error: ' + e.message); }
+}
 async function twCambiarModo(email, nuevo) {
   if (nuevo !== 'avanzado' && nuevo !== 'principiante') return;
   try {
@@ -3490,6 +3555,7 @@ async function renderSucursalesConfig() {
     const snap = await db.collection('negocios').doc(uid).collection('sucursales').get();
     sucursales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (infoEl) infoEl.textContent = sucursales.length + ' de ' + limiteSucursales + ' sucursales habilitadas';
+    twPintarLocalBar();
     if (btnNueva) {
       btnNueva.style.display = sucursales.length >= limiteSucursales ? 'none' : '';
       btnNueva.onclick = abrirModalSucursalConfig;
